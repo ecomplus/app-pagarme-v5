@@ -7,8 +7,8 @@
 
 const app = {
   app_id: 112381,
-  title: 'My Awesome E-Com Plus App',
-  slug: 'my-awesome-app',
+  title: 'Pagar.me v5',
+  slug: 'pagarme5',
   type: 'external',
   state: 'active',
   authentication: true,
