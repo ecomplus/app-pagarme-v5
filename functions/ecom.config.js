@@ -34,13 +34,13 @@ const app = {
      * Triggered when listing payments, must return available payment methods.
      * Start editing `routes/ecom/modules/list-payments.js`
      */
-    // list_payments:        { enabled: true },
+    list_payments: { enabled: true },
 
     /**
      * Triggered when order is being closed, must create payment transaction and return info.
      * Start editing `routes/ecom/modules/create-transaction.js`
      */
-    // create_transaction:   { enabled: true },
+    create_transaction: { enabled: true },
   },
 
   /**
@@ -54,7 +54,7 @@ const app = {
       'POST'           // Create procedures to receive webhooks
     ],
     products: [
-      // 'GET',           // Read products with public and private fields
+      'GET',           // Read products with public and private fields
       // 'POST',          // Create products
       // 'PATCH',         // Edit products
       // 'PUT',           // Overwrite products
@@ -82,7 +82,7 @@ const app = {
       // 'DELETE',        // Delete customers
     ],
     orders: [
-      // 'GET',           // List/read orders with public and private fields
+      'GET',           // List/read orders with public and private fields
       // 'POST',          // Create orders
       // 'PATCH',         // Edit orders
       // 'PUT',           // Overwrite orders
@@ -106,7 +106,7 @@ const app = {
     ],
     'orders/payments_history': [
       // 'GET',           // List/read order payments history events
-      // 'POST',          // Create payments history entry with new status
+      'POST',          // Create payments history entry with new status
       // 'DELETE',        // Delete payments history entry
     ],
 
@@ -138,37 +138,222 @@ const app = {
   },
 
   admin_settings: {
-    /**
-     * JSON schema based fields to be configured by merchant and saved to app `data` / `hidden_data`, such as:
-
-     webhook_uri: {
-       schema: {
-         type: 'string',
-         maxLength: 255,
-         format: 'uri',
-         title: 'Notifications URI',
-         description: 'Unique notifications URI available on your Custom App dashboard'
-       },
-       hide: true
-     },
-     token: {
-       schema: {
-         type: 'string',
-         maxLength: 50,
-         title: 'App token'
-       },
-       hide: true
-     },
-     opt_in: {
-       schema: {
-         type: 'boolean',
-         default: false,
-         title: 'Some config option'
-       },
-       hide: false
-     },
-
-     */
+    pagarme_public_key: {
+      schema: {
+        type: 'string',
+        maxLength: 255,
+        title: 'Chave pública',
+        description: 'Chave pública versão 5 em https://dashboard.pagar.me/#/myaccount/apikeys'
+      },
+      hide: true
+    },
+    pagarme_secret_key: {
+      schema: {
+        type: 'string',
+        maxLength: 255,
+        title: 'Chave secreta',
+        description: 'Chave secreta disponível em https://dashboard.pagar.me/#/myaccount/apikeys'
+      },
+      hide: true
+    },
+    soft_descriptor: {
+      schema: {
+        type: 'string',
+        title: 'Descrição da cobrança',
+        description: 'Como a cobrança será informada na fatura do cartão ou boleto'
+      },
+      hide: false
+    },
+    credit_card: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          enable_recurrence: {
+            type: 'boolean',
+            title: 'Habilitar recorrência',
+            description: 'Habilitar pagamento recorrente com cartão via Pagar.me',
+            default: true
+          },
+          label: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Rótulo',
+            description: 'Nome da forma de pagamento exibido para os clientes',
+            default: 'Cartão de crédito'
+          },
+          text: {
+            type: 'string',
+            maxLength: 1000,
+            title: 'Descrição',
+            description: 'Texto auxiliar sobre a forma de pagamento, pode conter tags HTML'
+          },
+          icon: {
+            type: 'string',
+            maxLength: 255,
+            format: 'uri',
+            title: 'Ícone',
+            description: 'Ícone customizado para a forma de pagamento, URL da imagem'
+          }
+        },
+        title: 'Cartão de crédito',
+        description: 'Configurações adicionais para cartão de crédito'
+      },
+      hide: false
+    },
+    banking_billet: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          enable_recurrence: {
+            type: 'boolean',
+            title: 'Habilitar recorrência via boleto',
+            description: 'Habilitar pagamento recorrênte com boleto bancário via Pagar.me',
+            default: false
+          },
+          days_due_date: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 999,
+            default: 7,
+            title: 'Dias corridos até o vencimento',
+            description: 'Representa diferença de dias entre a data da requisição e a data de vencimento'
+          },
+          instructions: {
+            type: 'string',
+            maxLength: 255,
+            title: 'Intruções do boleto',
+            description: 'Linhas impressas no boleto para instruções ao operador de caixa ou pagador'
+          },
+          label: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Rótulo',
+            description: 'Nome da forma de pagamento exibido para os clientes',
+            default: 'Boleto bancário'
+          },
+          text: {
+            type: 'string',
+            maxLength: 1000,
+            title: 'Descrição',
+            description: 'Texto auxiliar sobre a forma de pagamento, pode conter tags HTML'
+          },
+          icon: {
+            type: 'string',
+            maxLength: 255,
+            format: 'uri',
+            title: 'Ícone',
+            description: 'Ícone customizado para a forma de pagamento, URL da imagem'
+          }
+        },
+        title: 'Boleto bancário',
+        description: 'Configurações adicionais para boleto bancário'
+      },
+      hide: false
+    },
+    recurrence: {
+      schema: {
+        title: 'Recorrência',
+        description: 'Criar tipos de planos para recorrência.',
+        type: 'array',
+        maxItems: 10,
+        items: {
+          title: 'Plano',
+          type: 'object',
+          minProperties: 1,
+          properties: {
+            label: {
+              type: 'string',
+              maxLength: 100,
+              title: 'Plano',
+              description: 'Texto definir um nome para o plano'
+            },
+            periodicity: {
+              type: 'string',
+              enum: [
+                'Diaria',
+                'Semanal',
+                'Mensal',
+                'Bimestral',
+                'Trimestral',
+                'Semestral',
+                'Anual'
+              ],
+              default: 'Mensal',
+              title: 'Periodicidade da recorrência',
+              description: 'Definir a periodicidade da recorrência.'
+            },
+            discount: {
+              title: 'Desconto',
+              type: 'object',
+              required: [
+                'value'
+              ],
+              properties: {
+                percentage: {
+                  type: 'boolean',
+                  default: false,
+                  title: 'Desconto percentual'
+                },
+                value: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 99999999,
+                  title: 'Valor do desconto',
+                  description: 'Valor percentual/fixo do desconto'
+                },
+                apply_at: {
+                  type: 'string',
+                  enum: [
+                    'total',
+                    'subtotal',
+                  ],
+                  default: 'subtotal',
+                  title: 'Aplicar desconto em',
+                  description: 'Em qual valor o desconto deverá ser aplicado no checkout'
+                }
+              }
+            },
+            discount_first_installment: {
+              title: 'Desconto 1ª parcela',
+              type: 'object',
+              properties: {
+                disable: {
+                  type: 'boolean',
+                  default: true,
+                  title: 'Desativar desconto na primeira recorrência',
+                  description: 'Se desabilitado, desconto considerado será o desconto do plano'
+                },
+                percentage: {
+                  type: 'boolean',
+                  default: false,
+                  title: 'Desconto percentual'
+                },
+                value: {
+                  type: 'number',
+                  minimum: 0,
+                  maximum: 99999999,
+                  title: 'Valor do desconto',
+                  description: 'Valor percentual/fixo do desconto'
+                },
+                apply_at: {
+                  type: 'string',
+                  enum: [
+                    'total',
+                    'subtotal',
+                  ],
+                  default: 'subtotal',
+                  title: 'Aplicar desconto em',
+                  description: 'Em qual valor o desconto deverá ser aplicado no checkout'
+                }
+              }
+            }
+          }
+        }
+      },
+      hide: false
+    }
   }
 }
 
@@ -180,7 +365,8 @@ const app = {
 const procedures = []
 
 /**
- * Uncomment and edit code above to configure `triggers` and receive respective `webhooks`:
+* Uncomment and edit code above to configure `triggers` and receive respective `webhooks`:
+*/
 
 const { baseUri } = require('./__env')
 
@@ -188,47 +374,32 @@ procedures.push({
   title: app.title,
 
   triggers: [
-    // Receive notifications when new order is created:
+    // Receive notifications when products/variations prices or quantities changes:
     {
-      resource: 'orders',
-      action: 'create',
+      resource: 'products',
+      field: 'price',
+      action: 'change',
     },
-
-    // Receive notifications when order financial/fulfillment status are set or changed:
-    // Obs.: you probably SHOULD NOT enable the orders triggers below and the one above (create) together.
-    {
-      resource: 'orders',
-      field: 'financial_status',
-    },
-    {
-      resource: 'orders',
-      field: 'fulfillment_status',
-    },
-
-    // Receive notifications when products/variations stock quantity changes:
     {
       resource: 'products',
       field: 'quantity',
+      action: 'change',
     },
     {
       resource: 'products',
       subresource: 'variations',
-      field: 'quantity'
-    },
-
-    // Receive notifications when cart is edited:
-    {
-      resource: 'carts',
+      field: 'price',
       action: 'change',
     },
-
-    // Receive notifications when customer is deleted:
+    // Receive notifications when order status are set or changed:
     {
-      resource: 'customers',
-      action: 'delete',
+      resource: 'orders',
+      field: 'status',
     },
-
-    // Feel free to create custom combinations with any Store API resource, subresource, action and field.
+    // {
+    //   resource: 'orders',
+    //   field: 'items',
+    // },
   ],
 
   webhooks: [
@@ -242,9 +413,9 @@ procedures.push({
     }
   ]
 })
-
- * You may also edit `routes/ecom/webhook.js` to treat notifications properly.
- */
+/*
+* You may also edit `routes/ecom/webhook.js` to treat notifications properly.
+*/
 
 exports.app = app
 
