@@ -15,6 +15,29 @@ const parserInvoiceStatusToEcom = (status) => {
       return 'unknown'
   }
 }
+
+const parserChangeStatusToEcom = (status) => {
+  // overpaid paid partial_canceled payment_failed pending processing refunded underpaid
+  switch (status) {
+    case 'pending':
+    case 'paid':
+      return status
+    case 'overpaid':
+      return 'paid'
+    case 'processing':
+      return 'under_analysis'
+    case 'canceled':
+      return 'voided'
+    case 'payment_failed':
+      return 'unauthorized'
+    case 'underpaid':
+      return 'partially_paid'
+    default:
+      return 'unknown'
+  }
+}
+
 module.exports = {
-  parserInvoiceStatusToEcom
+  parserInvoiceStatusToEcom,
+  parserChangeStatusToEcom
 }
