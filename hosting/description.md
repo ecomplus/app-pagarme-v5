@@ -15,6 +15,8 @@ Com seu dashborad do Pagar.Me aberto:
 2) Em seguida clique em **Conta**
 3) Nas opções de configuração da conta, clique em **Editar**
 4) Vá até **Domínios** 
+![PagarMe banner](https://ecom-pagarme5.web.app/dominios.png)
+
 5) Adicione os domínios utilizados por sua loja, e clique em salvar
 
 ### Adicionando os Webhooks
@@ -27,6 +29,7 @@ Com seu dashborad do Pagar.Me aberto:
 
 *OBS.:* Lembre-se de substituir `SEU_STORE_ID_AQUI` pelo número do seu `storeId`
 
+![PagarMe banner](https://ecom-pagarme5.web.app/url_webhook.png)
 5) Em **Eventos** marque os seguintes eventos:
 
 #### Assinatura: 
@@ -43,6 +46,7 @@ Com seu dashborad do Pagar.Me aberto:
 - charge.refunded
 - charge.underpaid
 - charge.updated
+![PagarMe banner](https://ecom-pagarme5.web.app/eventos_webhook.png)
 
 6) Por fim Clique em salvar
 
@@ -52,4 +56,4 @@ Com seu dashborad do Pagar.Me aberto:
 2) Clique em **Chaves**
 3) A chave pública e a chave secreta serão necessárias para as configurações aqui no nosso aplicativo.
 
-![PagarMe banner](https://ecom-galaxpay.web.app/credit-card.png)
+![PagarMe banner](https://ecom-pagarme5.web.app/credit-card.png)

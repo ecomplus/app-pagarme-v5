@@ -66,9 +66,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         transaction.payment_link = charge.last_transaction.url
         redirectToPayment = true
       }
-
       // console.log('>> transaction ', JSON.stringify(transaction))
-
       colletionFirebase.doc(orderId)
         .set({
           storeId,
