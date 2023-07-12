@@ -10,7 +10,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
   const { storeId } = req
   const appData = Object.assign({}, application.data, application.hidden_data)
 
-  const pagarmeAxios = axios(appData.pagarme_secret_key)
+  const pagarmeAxios = axios(appData.pagarme_api_token)
 
   const orderId = params.order_id
   // const { amount, buyer, payer, to, items } = params
@@ -53,8 +53,8 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
       transaction.intermediator = {
         transaction_id: invoices[0].id,
-        transaction_code: `${transactionPagarme.acquirer_auth_code || ''};`,
-        transaction_reference: `${transactionPagarme.acquirer_tid}`
+        transaction_code: `${transactionPagarme.acquirer_auth_code || ''}`,
+        transaction_reference: `${transactionPagarme.acquirer_tid || ''}`
       }
 
       if (params.payment_method.code === 'banking_billet') {
@@ -78,7 +78,9 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           plan,
           subscriptionPagarmeId,
           invoicePagarmeId: invoices[0].id,
-          changePagarmeId: charge.id
+          changePagarmeId: charge.id,
+          items: subcription.items,
+          amount
         })
         .catch(console.error)
 

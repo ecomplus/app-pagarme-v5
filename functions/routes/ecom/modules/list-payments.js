@@ -11,7 +11,7 @@ exports.post = ({ appSdk }, req, res) => {
   // const initialTotalAmount = amount.total
 
   const config = Object.assign({}, application.data, application.hidden_data)
-  if (!config.pagarme_secret_key || !config.pagarme_public_key) {
+  if (!config.pagarme_api_token || !config.pagarme_public_key) {
     return res.status(409).send({
       error: 'NO_PAGARME_KEYS',
       message: 'Chave de API e/ou criptografia não configurada (lojista deve configurar o aplicativo)'
