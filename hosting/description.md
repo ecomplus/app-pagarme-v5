@@ -21,11 +21,11 @@ Com seu dashborad do Pagar.Me aberto:
 
 ### Adicionando os Webhooks
 
-1) No menu lateral na opção **CONFIGURAÇÕESÕES**
+1) No menu lateral na opção **CONFIGURAÇÕES**
 2) Clique na opção **Webhooks**
 3) Nas opções de webhooks, clique em **Criar Webhook**
 4) Na URL adicione a seguinte url:  
-`https://us-central1-ecom-pagarme5.cloudfunctions.net/app /app/pagarme/webhooks?store_id=SEU_STORE_ID_AQUI`
+`https://us-central1-ecom-pagarme5.cloudfunctions.net/app/pagarme/webhooks?store_id=SEU_STORE_ID_AQUI`
 
 *OBS.:* Lembre-se de substituir `SEU_STORE_ID_AQUI` pelo número do seu `storeId`
 
