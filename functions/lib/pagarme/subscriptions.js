@@ -43,7 +43,7 @@ const parseIntervalPlan = {
 }
 
 const createSubscription = async (params, appData, storeId, plan) => {
-  const pagarmeAxios = axios(appData.pagarme_secret_key)
+  const pagarmeAxios = axios(appData.pagarme_api_token)
 
   const orderId = params.order_id
   const { amount, buyer, to, items } = params
@@ -57,6 +57,11 @@ const createSubscription = async (params, appData, storeId, plan) => {
 
   const intervalPlan = parseIntervalPlan[plan.periodicity]
 
+  const statementDescriptor = appData.soft_descriptor || params?.domain
+    .replace('www.', '')
+    .replace('https://', '')
+    .split('.')[0] || '*'
+
   const pagarmeSubscription = {
     code: orderId,
     payment_method: paymentMethod,
@@ -64,7 +69,7 @@ const createSubscription = async (params, appData, storeId, plan) => {
     interval: intervalPlan.interval || 'month',
     interval_count: intervalPlan.interval_count || 1,
     billing_type: 'prepaid', //
-    statement_descriptor: `Assinatura ${plan.periodicity || 'Mensal'}`
+    statement_descriptor: (`Assinatura ${statementDescriptor}`).substring(22)
   }
 
   pagarmeSubscription.metada = {
@@ -113,10 +118,10 @@ const createSubscription = async (params, appData, storeId, plan) => {
   items.forEach(async item => {
     if (item.quantity > 0) {
       const itemSubscription = {
-        name: item.name || item.sku,
+        name: item.name || item.variation_id || item.product_id,
         quantity: item.quantity,
-        description: item.name || item.sku,
-        id: `pi_${item.sku || item.variation_id || item.product_id}`,
+        description: item.name || item.variation_id || item.product_id,
+        id: `pi_${item.sku}`,
         status: 'active',
         pricing_scheme: {
           scheme_type: 'unit',
@@ -135,28 +140,21 @@ const createSubscription = async (params, appData, storeId, plan) => {
     }
   })
 
+  console.log('>>amount ', JSON.stringify(amount))
+
   if (amount.freight) {
-    // If the plan discount is on the total then shipping will be an item,
-    //  if the discount is on the subtotal shipping will be an increment
-    if (plan?.discount?.apply_at === 'total') {
-      pagarmeSubscription.items.push({
-        name: 'Frete',
-        quantity: 1,
-        description: 'Frete',
-        id: `pi_freight_${orderId}`,
-        status: 'active',
-        pricing_scheme: {
-          scheme_type: 'unit',
-          price: Math.floor((amount.freight).toFixed(2) * 1000) / 10
-        }
-      })
-    } else {
-      pagarmeSubscription.increments = []
-      pagarmeSubscription.increments.push({
-        value: `${Math.floor((amount.freight).toFixed(2) * 1000) / 10}`,
-        discount_type: 'flat'
-      })
+    const itemFreight = {
+      name: 'Frete',
+      quantity: 1,
+      description: 'Frete',
+      id: `pi_freight_${orderId}`,
+      status: 'active',
+      pricing_scheme: {
+        scheme_type: 'unit',
+        price: Math.floor((amount.freight).toFixed(2) * 1000) / 10
+      }
     }
+    pagarmeSubscription.items.push(itemFreight)
   }
 
   console.log('>> amount ', JSON.stringify(amount))
