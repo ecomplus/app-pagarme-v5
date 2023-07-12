@@ -83,8 +83,8 @@ const app = {
     ],
     orders: [
       'GET',           // List/read orders with public and private fields
-      // 'POST',          // Create orders
-      // 'PATCH',         // Edit orders
+      'POST',          // Create orders
+      'PATCH',         // Edit orders
       // 'PUT',           // Overwrite orders
       // 'DELETE',        // Delete orders
     ],
@@ -147,7 +147,7 @@ const app = {
       },
       hide: true
     },
-    pagarme_secret_key: {
+    pagarme_api_token: {
       schema: {
         type: 'string',
         maxLength: 255,
