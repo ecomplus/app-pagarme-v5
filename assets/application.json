@@ -29,7 +29,9 @@
     "categories": [],
     "customers": [],
     "orders": [
-      "GET"
+      "GET",
+      "POST",
+      "PATCH"
     ],
     "carts": [],
     "orders/fulfillments": [],
@@ -51,7 +53,7 @@
       },
       "hide": true
     },
-    "pagarme_secret_key": {
+    "pagarme_api_token": {
       "schema": {
         "type": "string",
         "maxLength": 255,
