@@ -1,11 +1,20 @@
 {
-  "app_id": 9000,
-  "title": "My Awesome E-Com Plus App",
-  "slug": "my-awesome-ecom-plus-app",
+  "app_id": 112381,
+  "title": "Pagar.me v5",
+  "slug": "pagarme5",
   "type": "external",
   "state": "active",
   "authentication": true,
-  "modules": {},
+  "modules": {
+    "list_payments": {
+      "enabled": true,
+      "endpoint": "https://us-central1-ecom-pagarme5.cloudfunctions.net/app/ecom/modules/list-payments"
+    },
+    "create_transaction": {
+      "enabled": true,
+      "endpoint": "https://us-central1-ecom-pagarme5.cloudfunctions.net/app/ecom/modules/create-transaction"
+    }
+  },
   "auth_scope": {
     "stores/me": [
       "GET"
@@ -13,19 +22,243 @@
     "procedures": [
       "POST"
     ],
-    "products": [],
+    "products": [
+      "GET"
+    ],
     "brands": [],
     "categories": [],
     "customers": [],
-    "orders": [],
+    "orders": [
+      "GET"
+    ],
     "carts": [],
     "orders/fulfillments": [],
-    "orders/payments_history": [],
+    "orders/payments_history": [
+      "POST"
+    ],
     "products/quantity": [],
     "products/variations/quantity": [],
     "products/price": [],
     "products/variations/price": []
   },
-  "auth_callback_uri": "https://us-central1-ecom-app-boilerplate.cloudfunctions.net/app/ecom/auth-callback",
+  "admin_settings": {
+    "pagarme_public_key": {
+      "schema": {
+        "type": "string",
+        "maxLength": 255,
+        "title": "Chave pública",
+        "description": "Chave pública versão 5 em https://dashboard.pagar.me/#/myaccount/apikeys"
+      },
+      "hide": true
+    },
+    "pagarme_secret_key": {
+      "schema": {
+        "type": "string",
+        "maxLength": 255,
+        "title": "Chave secreta",
+        "description": "Chave secreta disponível em https://dashboard.pagar.me/#/myaccount/apikeys"
+      },
+      "hide": true
+    },
+    "soft_descriptor": {
+      "schema": {
+        "type": "string",
+        "title": "Descrição da cobrança",
+        "description": "Como a cobrança será informada na fatura do cartão ou boleto"
+      },
+      "hide": false
+    },
+    "credit_card": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enable_recurrence": {
+            "type": "boolean",
+            "title": "Habilitar recorrência",
+            "description": "Habilitar pagamento recorrente com cartão via Pagar.me",
+            "default": true
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Rótulo",
+            "description": "Nome da forma de pagamento exibido para os clientes",
+            "default": "Cartão de crédito"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Descrição",
+            "description": "Texto auxiliar sobre a forma de pagamento, pode conter tags HTML"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "uri",
+            "title": "Ícone",
+            "description": "Ícone customizado para a forma de pagamento, URL da imagem"
+          }
+        },
+        "title": "Cartão de crédito",
+        "description": "Configurações adicionais para cartão de crédito"
+      },
+      "hide": false
+    },
+    "banking_billet": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enable_recurrence": {
+            "type": "boolean",
+            "title": "Habilitar recorrência via boleto",
+            "description": "Habilitar pagamento recorrênte com boleto bancário via Pagar.me",
+            "default": false
+          },
+          "days_due_date": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999,
+            "default": 7,
+            "title": "Dias corridos até o vencimento",
+            "description": "Representa diferença de dias entre a data da requisição e a data de vencimento"
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Intruções do boleto",
+            "description": "Linhas impressas no boleto para instruções ao operador de caixa ou pagador"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Rótulo",
+            "description": "Nome da forma de pagamento exibido para os clientes",
+            "default": "Boleto bancário"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Descrição",
+            "description": "Texto auxiliar sobre a forma de pagamento, pode conter tags HTML"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "uri",
+            "title": "Ícone",
+            "description": "Ícone customizado para a forma de pagamento, URL da imagem"
+          }
+        },
+        "title": "Boleto bancário",
+        "description": "Configurações adicionais para boleto bancário"
+      },
+      "hide": false
+    },
+    "recurrence": {
+      "schema": {
+        "title": "Recorrência",
+        "description": "Criar tipos de planos para recorrência.",
+        "type": "array",
+        "maxItems": 10,
+        "items": {
+          "title": "Plano",
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 100,
+              "title": "Plano",
+              "description": "Texto definir um nome para o plano"
+            },
+            "periodicity": {
+              "type": "string",
+              "enum": [
+                "Diaria",
+                "Semanal",
+                "Mensal",
+                "Bimestral",
+                "Trimestral",
+                "Semestral",
+                "Anual"
+              ],
+              "default": "Mensal",
+              "title": "Periodicidade da recorrência",
+              "description": "Definir a periodicidade da recorrência."
+            },
+            "discount": {
+              "title": "Desconto",
+              "type": "object",
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "percentage": {
+                  "type": "boolean",
+                  "default": false,
+                  "title": "Desconto percentual"
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 99999999,
+                  "title": "Valor do desconto",
+                  "description": "Valor percentual/fixo do desconto"
+                },
+                "apply_at": {
+                  "type": "string",
+                  "enum": [
+                    "total",
+                    "subtotal"
+                  ],
+                  "default": "subtotal",
+                  "title": "Aplicar desconto em",
+                  "description": "Em qual valor o desconto deverá ser aplicado no checkout"
+                }
+              }
+            },
+            "discount_first_installment": {
+              "title": "Desconto 1ª parcela",
+              "type": "object",
+              "properties": {
+                "disable": {
+                  "type": "boolean",
+                  "default": true,
+                  "title": "Desativar desconto na primeira recorrência",
+                  "description": "Se desabilitado, desconto considerado será o desconto do plano"
+                },
+                "percentage": {
+                  "type": "boolean",
+                  "default": false,
+                  "title": "Desconto percentual"
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 99999999,
+                  "title": "Valor do desconto",
+                  "description": "Valor percentual/fixo do desconto"
+                },
+                "apply_at": {
+                  "type": "string",
+                  "enum": [
+                    "total",
+                    "subtotal"
+                  ],
+                  "default": "subtotal",
+                  "title": "Aplicar desconto em",
+                  "description": "Em qual valor o desconto deverá ser aplicado no checkout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "hide": false
+    }
+  },
+  "auth_callback_uri": "https://us-central1-ecom-pagarme5.cloudfunctions.net/app/ecom/auth-callback",
   "version": "1.0.0"
 }
