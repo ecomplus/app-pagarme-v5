@@ -12,6 +12,9 @@
       const resp = await fetch(
         `https://api.pagar.me/core/v5/tokens?appId=${apiKey}`,
         {
+          headers: {
+            'Content-Type': 'application/json'
+          },
           method: 'POST',
           body: JSON.stringify({
             type: 'card',
@@ -25,6 +28,7 @@
         if (data.id) {
           resolve(data.id)
         }
+        throw new Error(`Error Token ${await resp.text()}`)
       } catch (err) {
         console.error(err)
         reject(err)
