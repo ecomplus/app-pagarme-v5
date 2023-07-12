@@ -16,40 +16,45 @@ const updateTransaction = (appSdk, storeId, orderId, auth, body, transactionId) 
 }
 
 const getOrderIntermediatorTransactionId = async (appSdk, storeId, invoiceId, auth) => {
+  let queryString = `?transactions.intermediator.transaction_id=${invoiceId}`
+  queryString += '&fields=transactions,financial_status.current,status'
   const { response: { data } } = await appSdk
-    .apiRequest(storeId, `/orders.json?transactions.intermediator.transaction_id${invoiceId}`, 'GET', null, auth)
+    .apiRequest(storeId, `/orders.json${queryString}`, 'GET', null, auth)
+
+  // console.log(`>>> ${JSON.stringify(data)}`)
 
   return data?.result.length ? data?.result[0] : null
 }
 
-const checkItemsAndRecalculeteOrder = (amount, items, plan, newItem) => {
+const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
   let subtotal = 0
   let item
   let i = 0
   while (i < items.length) {
     item = items[i]
 
-    if (newItem && item.sku === newItem.sku) {
-      if (newItem.quantity === 0) {
-        items.splice(i, 1)
-      } else {
-        if (item.final_price) {
-          item.final_price = newItem.price
-        }
-        item.price = newItem.price
-        item.quantity = newItem.quantity
-        subtotal += item.quantity * (item.final_price || item.price)
-        i++
-      }
+    if (item.flags && (item.flags.includes('freebie') || item.flags.includes('discount-set-free'))) {
+      items.splice(i, 1)
     } else {
-      if (item.flags && (item.flags.includes('freebie') || item.flags.includes('discount-set-free'))) {
-        items.splice(i, 1)
-      } else {
+      const itemFound = itemsPagarme.find(itemFind => itemFind.id === `pi_${itemFind.sku}`)
+      if (itemFound) {
+        item.quantity = itemFound.quantity
+        if (item.final_price) {
+          item.final_price = (itemFound / 100)
+        }
+        item.price = (itemFound / 100)
         subtotal += item.quantity * (item.final_price || item.price)
         i++
+      } else {
+        items.splice(i, 1)
       }
     }
   }
+
+  // TODO:
+  // Freigth is an item on PagarMe
+  // there is an increment in the subscription referring to the freight
+  // if the plan discount is only in the subtotal and the discount is in percentage
 
   if (subtotal > 0) {
     amount.subtotal = subtotal
@@ -73,20 +78,18 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, newItem) => {
   return 0
 }
 
-const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, invoice) => {
-  const buyers = oldOrder.buyers
-  const items = oldOrder.items
+const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, charge, subscriptionPagarme) => {
+  const { buyers, items, domain, amount } = oldOrder
   const channelType = oldOrder.channel_type
-  const domain = oldOrder.domain
-  const amount = oldOrder.amount
   const shippingLines = oldOrder.shipping_lines
   const shippingMethodLabel = oldOrder.shipping_method_label
   const paymentMethodLabel = oldOrder.payment_method_label
   const originalTransaction = oldOrder.transactions[0]
 
-  const quantity = invoice.cycle.cycle
+  const quantity = charge.code?.replace(`${oldOrder._id}-`, '')
+  const itemsPagarme = subscriptionPagarme.items
 
-  checkItemsAndRecalculeteOrder(amount, items, plan)
+  checkItemsAndRecalculeteOrder(amount, items, plan, itemsPagarme)
   if (amount.balance) {
     delete amount.balance
   }
@@ -96,7 +99,7 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, i
       item.stock_status = 'pending'
     }
   })
-  const transactionPagarme = invoice.charge.last_transaction
+  const transactionPagarme = charge.last_transaction
 
   const transactions = [
     {
@@ -106,14 +109,14 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, i
         current: status
       },
       intermediator: {
-        transaction_id: `${invoice.id};`,
-        transaction_code: `${transactionPagarme.acquirer_auth_code || ''};`,
+        transaction_id: `${charge.invoice.id}`,
+        transaction_code: `${transactionPagarme.acquirer_auth_code || ''}`,
         transaction_reference: `${transactionPagarme.acquirer_tid || ''};`
       },
       payment_method: originalTransaction.payment_method,
       app: originalTransaction.app,
       _id: ecomUtils.randomObjectId(),
-      notes: `Parcela #${quantity} referente à ${invoice?.subscription?.statement_descriptor || 'Assinatura'}`,
+      notes: `Parcela #${quantity} referente à ${subscriptionPagarme?.statement_descriptor || 'Assinatura'}`,
       custom_fields: originalTransaction.custom_fields
     }
   ]
@@ -141,8 +144,8 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, i
       _id: oldOrder._id,
       number: oldOrder.number
     },
-    notes: `Parcela #${quantity} referente à ${invoice?.subscription?.statement_descriptor || 'Assinatura'}`,
-    staff_notes: `Valor cobrado no GalaxPay R$${(invoice.amount) / 100}`
+    notes: `Parcela #${quantity} referente à ${subscriptionPagarme?.statement_descriptor || 'Assinatura'}`,
+    staff_notes: `Valor cobrado no GalaxPay R$${(charge.amount) / 100}`
   }
   return appSdk.apiRequest(storeId, 'orders.json', 'POST', body, auth)
 }
@@ -151,11 +154,25 @@ const updateOrder = async (appSdk, storeId, orderId, auth, body) => {
   return appSdk.apiRequest(storeId, `orders/${orderId}.json`, 'PATCH', body, auth)
 }
 
+const getOrderWithQueryString = async (appSdk, storeId, query, auth) => {
+  const { response: { data } } = await appSdk
+    .apiRequest(storeId, `/orders.json?${query}`, 'GET', null, auth)
+
+  return data?.result.length ? data?.result : null
+}
+
+const getProductById = async (appSdk, storeId, productId, auth) => {
+  const { response: { data } } = await appSdk.apiRequest(storeId, `/products/${productId}.json`, 'GET', null, auth)
+  return data
+}
+
 module.exports = {
   getOrderById,
   addPaymentHistory,
   updateTransaction,
   getOrderIntermediatorTransactionId,
   createNewOrderBasedOld,
-  updateOrder
+  updateOrder,
+  getOrderWithQueryString,
+  getProductById
 }
