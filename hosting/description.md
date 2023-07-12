@@ -54,7 +54,7 @@ Com seu dashborad do Pagar.Me aberto:
 
 ### Obtendo as Chaves
 
-1) Ainda no menu lateral ***CONFIGURAÇÕES**
+1) Ainda no menu lateral **CONFIGURAÇÕES**
 2) Clique em **Chaves**
 3) A chave pública e a chave secreta serão necessárias para as configurações aqui no nosso aplicativo.
 
