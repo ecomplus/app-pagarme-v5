@@ -21,6 +21,7 @@ const parserChangeStatusToEcom = (status) => {
   switch (status) {
     case 'pending':
     case 'paid':
+    case 'refunded':
       return status
     case 'overpaid':
       return 'paid'
