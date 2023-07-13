@@ -36,13 +36,14 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
     if (item.flags && (item.flags.includes('freebie') || item.flags.includes('discount-set-free'))) {
       items.splice(i, 1)
     } else {
-      const itemFound = itemsPagarme.find(itemFind => itemFind.id === `pi_${itemFind.sku}`)
+      const itemFound = itemsPagarme.find(itemFind => itemFind.id === `pi_${item.sku}`)
+      console.log('>> Item ', JSON.stringify(itemFound))
       if (itemFound) {
         item.quantity = itemFound.quantity
         if (item.final_price) {
-          item.final_price = (itemFound / 100)
+          item.final_price = (itemFound.pricing_scheme.price / 100)
         }
-        item.price = (itemFound / 100)
+        item.price = (itemFound.pricing_scheme.price / 100)
         subtotal += item.quantity * (item.final_price || item.price)
         i++
       } else {
@@ -111,7 +112,7 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
       intermediator: {
         transaction_id: `${charge.invoice.id}`,
         transaction_code: `${transactionPagarme.acquirer_auth_code || ''}`,
-        transaction_reference: `${transactionPagarme.acquirer_tid || ''};`
+        transaction_reference: `${transactionPagarme.acquirer_tid || ''}`
       },
       payment_method: originalTransaction.payment_method,
       app: originalTransaction.app,
@@ -127,6 +128,10 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
     updated_at: transactionPagarme.updated_at || new Date().toISOString(),
     current: status
   }
+
+  let notes = `Parcela #${quantity} desconto de ${plan.discount.percentage ? '' : 'R$'}`
+  notes += ` ${plan.discount.value} ${plan.discount.percentage ? '%' : ''}`
+  notes += ` sobre ${plan.discount.apply_at}`
 
   const body = {
     opened_at: new Date().toISOString(),
@@ -144,8 +149,8 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
       _id: oldOrder._id,
       number: oldOrder.number
     },
-    notes: `Parcela #${quantity} referente à ${subscriptionPagarme?.statement_descriptor || 'Assinatura'}`,
-    staff_notes: `Valor cobrado no GalaxPay R$${(charge.amount) / 100}`
+    notes,
+    staff_notes: `Valor cobrado no Pagar.Me R$${(charge.amount) / 100}`
   }
   return appSdk.apiRequest(storeId, 'orders.json', 'POST', body, auth)
 }

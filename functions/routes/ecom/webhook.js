@@ -49,7 +49,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     }
 
     if (resource === 'orders') {
-      if (body.status === 'cancelled') {
+      if (body?.status === 'cancelled') {
         const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
         if (subcriptions && subcriptions[0].status !== 'canceled') {
           try {
@@ -107,31 +107,38 @@ exports.post = async ({ appSdk, admin }, req, res) => {
                     price: ecomUtils.price({ ...product, ...variation }),
                     quantity
                   }
-                  itemsUpdate.push(newItem)
-                  // checkItemsAndRecalculeteOrder(order.amount, order.items, docSubscription.plan, newItem)
+                  if ((orderItem.final_price && orderItem.final_price !== newItem.price) ||
+                    orderItem.price !== newItem.price || orderItem.quantity !== newItem.quantity) {
+                    itemsUpdate.push(newItem)
+                  }
                 } else {
                   const newItem = {
                     sku: product.sku,
                     price: ecomUtils.price(product),
                     quantity: product.quantity < orderItem.quantity ? product.quantity : orderItem.quantity
                   }
-                  itemsUpdate.push(newItem)
+                  if ((orderItem.final_price && orderItem.final_price !== newItem.price) ||
+                    orderItem.price !== newItem.price || orderItem.quantity !== newItem.quantity) {
+                    itemsUpdate.push(newItem)
+                  }
                 }
               }
             })
 
-            docSubscription?.items?.forEach(itemPagarme => {
-              const itemToEdit = itemsUpdate.find(itemFind => itemPagarme.id === `pi_${itemFind.sku}`)
-              if (itemToEdit && !itemPagarme.cycles) {
-                itemPagarme.quantity = itemToEdit.quantity
-                itemPagarme.pricing_scheme.price = Math.floor((itemToEdit.price) * 100)
-                updateItemPagarme.push({ subscription_id: docSubscription.subscriptionPagarmeId, item: itemPagarme })
-              }
-            })
+            if (itemsUpdate.length) {
+              docSubscription?.items?.forEach(itemPagarme => {
+                const itemToEdit = itemsUpdate.find(itemFind => itemPagarme.id === `pi_${itemFind.sku}`)
+                if (itemToEdit && !itemPagarme.cycles) {
+                  itemPagarme.quantity = itemToEdit.quantity
+                  itemPagarme.pricing_scheme.price = Math.floor((itemToEdit.price) * 100)
+                  updateItemPagarme.push({ subscription_id: docSubscription.subscriptionPagarmeId, item: itemPagarme })
+                }
+              })
+            }
           }
           // order not found or error
           if (updateItemPagarme.length) {
-            console.log('>> try update item')
+            console.log('>> Try update item in Pagar.Me')
             try {
               //
               await Promise.all(updateItemPagarme.map(itemPagarme => {
@@ -144,14 +151,13 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               }))
               console.log('>>> Update SUCESSS')
               res.send(ECHO_SUCCESS)
-              // TODO: save item in firestore (sem precisar de acessar o pagarme)
             } catch (err) {
               console.log('err ', err)
-              // pegar os itens no pagarme e atualizar no firestore
+              // When creating a new order, check the items saved in Pagar.Me with the original order items
+              // No need to save to firestore
             }
           }
         }
-        // fim do for
       }
       console.log('>> not found ')
     }
