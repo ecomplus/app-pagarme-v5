@@ -311,7 +311,7 @@ const app = {
                   ],
                   default: 'subtotal',
                   title: 'Aplicar desconto em',
-                  description: 'Em qual valor o desconto deverá ser aplicado no checkout'
+                  description: 'Em qual valor o desconto deverá ser aplicado nas parcelas da recorrência.'
                 }
               }
             },
@@ -322,20 +322,20 @@ const app = {
                 disable: {
                   type: 'boolean',
                   default: true,
-                  title: 'Desativar desconto na primeira recorrência',
-                  description: 'Se desabilitado, desconto considerado será o desconto do plano'
+                  title: 'Desativar desconto na 1ª parcela da recorrência',
+                  description: 'Se desabilitado, desconto considerado na 1ª parcela da recorrência será o desconto do acima'
                 },
                 percentage: {
                   type: 'boolean',
                   default: false,
-                  title: 'Desconto percentual'
+                  title: 'Desconto percentual da 1ª parcela da recorrência'
                 },
                 value: {
                   type: 'number',
                   minimum: 0,
                   maximum: 99999999,
                   title: 'Valor do desconto',
-                  description: 'Valor percentual/fixo do desconto'
+                  description: 'Valor percentual/fixo do desconto da 1ª parcela da recorrência'
                 },
                 apply_at: {
                   type: 'string',
@@ -345,7 +345,7 @@ const app = {
                   ],
                   default: 'subtotal',
                   title: 'Aplicar desconto em',
-                  description: 'Em qual valor o desconto deverá ser aplicado no checkout'
+                  description: 'Em qual valor o desconto da 1ª parcela da recorrência deverá ser aplicado no checkout'
                 }
               }
             }
