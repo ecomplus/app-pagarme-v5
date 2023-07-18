@@ -311,7 +311,7 @@ const app = {
                   ],
                   default: 'subtotal',
                   title: 'Aplicar desconto em',
-                  description: 'Em qual valor o desconto deverá ser aplicado nas parcelas da recorrência.'
+                  description: 'Em qual valor o desconto deverá ser aplicado nas parcelas da recorrência'
                 }
               }
             },
