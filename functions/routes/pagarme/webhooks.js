@@ -155,11 +155,19 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               return res.status(404)
                 .send({ message: `Subscription code: #${subscription.code} not found` })
             }
+          } else {
+            console.log('>> Order not found and transaction status is not paid')
+            return res.status(400)
+              .send({ message: 'Order not found and status is not paid'})
           }
         }
+      } else {
+        // TODO:
+        // payment update (order in pagarme)
+        return res.sendStatus(405)
       }
-      // TODO:
-      // payment update (order in pagarme)
+    } else {
+      return res.sendStatus(405)
     }
   } catch (error) {
     console.error(error)
