@@ -103,9 +103,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     } else if (type.startsWith('charge.')) {
       // const statusChange = type.replace('charge.', '')
       const { data: charge } = await pagarmeAxios.get(`/charges/${body.data.id}`)
-      console.log('>>Charge ', JSON.stringify(charge))
+      console.log('>> Charge ', JSON.stringify(charge))
       if (charge.invoice) {
         const { invoice, status } = charge
+        console.log('>>Parse status: ', parserChangeStatusToEcom(status))
         const order = await getOrderIntermediatorTransactionId(appSdk, storeId, invoice.id, auth)
         if (order) {
           if (order.financial_status.current !== parserChangeStatusToEcom(status)) {
