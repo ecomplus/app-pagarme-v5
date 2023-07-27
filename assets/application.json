@@ -77,9 +77,14 @@
         "properties": {
           "enable_recurrence": {
             "type": "boolean",
-            "title": "Habilitar recorrência",
+            "title": "Habilitar recorrência via cartão",
             "description": "Habilitar pagamento recorrente com cartão via Pagar.me",
             "default": true
+          },
+          "disable": {
+            "type": "boolean",
+            "title": "Desabilitar pagamento via cartão",
+            "description": "Desabilitar pagamento com cartão via Pagar.me"
           },
           "label": {
             "type": "string",
@@ -115,8 +120,13 @@
           "enable_recurrence": {
             "type": "boolean",
             "title": "Habilitar recorrência via boleto",
-            "description": "Habilitar pagamento recorrênte com boleto bancário via Pagar.me",
+            "description": "Habilitar pagamento recorrente com boleto bancário via Pagar.me",
             "default": false
+          },
+          "disable": {
+            "type": "boolean",
+            "title": "Desabilitar pagamento via boleto",
+            "description": "Desabilitar pagamento com boleto bancário via Pagar.me"
           },
           "days_due_date": {
             "type": "integer",
@@ -155,6 +165,161 @@
         },
         "title": "Boleto bancário",
         "description": "Configurações adicionais para boleto bancário"
+      },
+      "hide": false
+    },
+    "account_deposit": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "disable": {
+            "type": "boolean",
+            "title": "Desabilitar Pix",
+            "description": "Desabilitar pagamento com Pix via Pagar.me",
+            "default": true
+          },
+          "due_time": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999,
+            "default": 60,
+            "title": "Minutos para validade do Pix"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Rótulo",
+            "description": "Nome da forma de pagamento exibido para os clientes",
+            "default": "Pix"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 255,
+            "format": "uri",
+            "title": "Ícone",
+            "description": "Ícone customizado para a forma de pagamento, URL da imagem"
+          }
+        },
+        "title": "Pix",
+        "description": "Configurações adicionais para Pix"
+      },
+      "hide": false
+    },
+    "discount": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "apply_at": {
+            "type": "string",
+            "enum": [
+              "total",
+              "subtotal"
+            ],
+            "default": "subtotal",
+            "title": "Aplicar desconto em",
+            "description": "Em qual valor o desconto deverá ser aplicado no checkout"
+          },
+          "min_amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999999999,
+            "title": "Pedido mínimo",
+            "description": "Montante mínimo para aplicar o desconto"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "percentage",
+              "fixed"
+            ],
+            "default": "percentage",
+            "title": "Tipo de desconto",
+            "description": "Desconto com valor percentual ou fixo"
+          },
+          "value": {
+            "type": "number",
+            "minimum": -99999999,
+            "maximum": 99999999,
+            "title": "Valor do desconto",
+            "description": "Valor percentual ou fixo a ser descontado, dependendo to tipo configurado"
+          },
+          "banking_billet": {
+            "type": "boolean",
+            "default": true,
+            "title": "Desconto no boleto",
+            "description": "Habilitar desconto via boleto Pagar.me (padrão)"
+          },
+          "credit_card": {
+            "type": "boolean",
+            "default": true,
+            "title": "Desconto no cartão",
+            "description": "Habilitar desconto com cartão de crédito via Pagar.me"
+          },
+          "account_deposit": {
+            "type": "boolean",
+            "default": true,
+            "title": "Desconto no Pix",
+            "description": "Habilitar desconto com Pix via Pagar.me"
+          }
+        },
+        "title": "Desconto",
+        "description": "Desconto a ser aplicado para pagamentos via Pagar.me (Descontos não aplicavéis a recorrência)"
+      },
+      "hide": false
+    },
+    "installments": {
+      "schema": {
+        "type": "object",
+        "required": [
+          "max_number"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "min_installment": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 99999999,
+            "default": 5,
+            "title": "Parcela mínima",
+            "description": "Valor mínimo da parcela"
+          },
+          "max_number": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 999,
+            "title": "Máximo de parcelas",
+            "description": "Número máximo de parcelas"
+          },
+          "monthly_interest": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999,
+            "default": 0,
+            "title": "Juros mensais",
+            "description": "Taxa de juros mensal, zero para parcelamento sem juros"
+          },
+          "max_interest_free": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 999,
+            "title": "Parcelas sem juros",
+            "description": "Mesclar parcelamento com e sem juros (ex.: até 3x sem juros e 12x com juros)"
+          },
+          "interest_free_min_amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999999999,
+            "title": "Mínimo sem juros",
+            "description": "Montante mínimo para parcelamento sem juros"
+          }
+        },
+        "title": "Parcelamento",
+        "description": "Opções de parcelamento no cartão via Pagar.me"
       },
       "hide": false
     },
@@ -197,10 +362,15 @@
                 "value"
               ],
               "properties": {
-                "percentage": {
-                  "type": "boolean",
-                  "default": false,
-                  "title": "Desconto percentual"
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "percentage",
+                    "fixed"
+                  ],
+                  "default": "percentage",
+                  "title": "Tipo de desconto",
+                  "description": "Desconto com valor percentual ou fixo"
                 },
                 "value": {
                   "type": "number",
@@ -231,10 +401,15 @@
                   "title": "Desativar desconto na 1ª parcela da recorrência",
                   "description": "Se desabilitado, desconto considerado na 1ª parcela da recorrência será o desconto do acima"
                 },
-                "percentage": {
-                  "type": "boolean",
-                  "default": false,
-                  "title": "Desconto percentual da 1ª parcela da recorrência"
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "percentage",
+                    "fixed"
+                  ],
+                  "default": "percentage",
+                  "title": "Tipo de desconto",
+                  "description": "Desconto com valor percentual ou fixo"
                 },
                 "value": {
                   "type": "number",
