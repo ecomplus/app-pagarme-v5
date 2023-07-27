@@ -1,7 +1,7 @@
 const { hostingUri } = require('../../../__env')
 const path = require('path')
 const fs = require('fs')
-// const addInstallments = require('../../../lib/payments/add-installments')
+const addInstallments = require('../../../lib/payments/add-installments')
 const { discountPlanPayment } = require('../../../lib/pagarme/handle-plans')
 
 exports.post = ({ appSdk }, req, res) => {
@@ -28,6 +28,11 @@ exports.post = ({ appSdk }, req, res) => {
     paymentTypes.push('recurrence')
   }
 
+  // console.log('>>> ', config)
+  if (!config.credit_card.disable || !config.banking_billet.disable || !config.account_deposit.disable) {
+    paymentTypes.push('payment')
+  }
+
   // setup payment gateway objects
   const intermediator = {
     name: 'Pagar.me',
@@ -35,9 +40,12 @@ exports.post = ({ appSdk }, req, res) => {
     code: 'pagarme'
   }
 
-  let amount = params.amount || {}
-
   const listPaymentMethod = ['credit_card', 'banking_billet']
+
+  if (!config.account_deposit?.disable) {
+    listPaymentMethod.push('account_deposit')
+  }
+
   paymentTypes.forEach(type => {
     // At first the occurrence only with credit card
     const isRecurrence = type === 'recurrence'
@@ -45,11 +53,18 @@ exports.post = ({ appSdk }, req, res) => {
     plans.forEach(plan => {
       listPaymentMethod.forEach(paymentMethod => {
         // console.log('>> List Payments ', type, ' ', plan, ' ', paymentMethod)
+        const amount = { ...params.amount } || {}
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
         const methodConfig = config[paymentMethod] || {}
-        const methodEnable = isRecurrence ? methodConfig.enable_recurrence : !methodConfig.disable
-        if (methodEnable) {
+        let methodEnable = isRecurrence ? methodConfig.enable_recurrence : !methodConfig.disable
+
+        // Pix not active in recurrence
+        methodEnable = isPix && isRecurrence ? false : methodEnable
+
+        const minAmount = methodConfig?.min_amount || 0
+        const validateAmount = amount.total ? (amount.total >= minAmount) : true // Workaround for showcase
+        if (methodEnable && validateAmount) {
           let label = isRecurrence ? plan.label : methodConfig.label
           if (!label) {
             if (isCreditCard) {
@@ -71,6 +86,59 @@ exports.post = ({ appSdk }, req, res) => {
             intermediator
           }
 
+          let discount
+          if (isRecurrence) {
+            discount = discountPlanPayment(label, plan, amount)
+          } else {
+            discount = config.discount
+          }
+
+          if (discount) {
+            if (isRecurrence) {
+              gateway.discount = !plan.discount_first_installment?.disable ? plan.discount_first_installment : plan.discount
+              gateway.discount.type = discount.discountOption.type
+              response.discount_option = discount.discountOption
+            } else if (discount[paymentMethod]) {
+              gateway.discount = {
+                apply_at: discount.apply_at,
+                type: discount.type,
+                value: discount.value
+              }
+
+              // check amount value to apply discount
+              if (amount.total < (discount.min_amount || 0)) {
+                delete gateway.discount
+              } else {
+                delete discount.min_amount
+
+                // fix local amount object
+                const applyDiscount = discount.apply_at
+
+                const maxDiscount = amount[applyDiscount || 'subtotal']
+                let discountValue
+                if (discount.type === 'percentage') {
+                  discountValue = maxDiscount * discount.value / 100
+                } else {
+                  discountValue = discount.value
+                  if (discountValue > maxDiscount) {
+                    discountValue = maxDiscount
+                  }
+                }
+
+                if (discountValue) {
+                  amount.discount = (amount.discount || 0) + discountValue
+                  amount.total -= discountValue
+                  if (amount.total < 0) {
+                    amount.total = 0
+                  }
+                }
+              }
+              if (response.discount_option) {
+                response.discount_option.min_amount = discount.min_amount
+              }
+            }
+          }
+
           if (isCreditCard) {
             if (!gateway.icon) {
               gateway.icon = `${hostingUri}/credit-card.png`
@@ -85,20 +153,13 @@ exports.post = ({ appSdk }, req, res) => {
                 is_promise: true
               }
             }
-          }
-
-          let discount
-          if (isRecurrence) {
-            discount = discountPlanPayment(label, plan, amount)
-          } else {
-            discount = config.discount
-          }
-
-          if (discount) {
-            amount = discount.amount
-            gateway.discount = !plan.discount_first_installment?.disable ? plan.discount_first_installment : plan.discount
-            gateway.discount.type = discount.discountOption.type
-            response.discount_option = discount.discountOption
+            if (!isRecurrence) {
+              const { installments } = config
+              if (installments) {
+                // list all installment options and default one
+                addInstallments(amount, installments, gateway, response)
+              }
+            }
           }
           response.payment_gateways.push(gateway)
         }

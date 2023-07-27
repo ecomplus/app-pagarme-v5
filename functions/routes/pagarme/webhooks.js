@@ -3,13 +3,13 @@ const axios = require('./../../lib/pagarme/axios-create')
 const {
   getOrderById,
   addPaymentHistory,
-  // updateTransaction,
+  updateTransaction,
   getOrderIntermediatorTransactionId,
   createNewOrderBasedOld,
   updateOrder
 } = require('../../lib/store-api/utils')
 
-const { parserChangeStatusToEcom } = require('../../lib/pagarme/parse-to-ecom')
+const { parserChangeStatusToEcom } = require('../../lib/pagarme/parses-utils')
 
 exports.post = async ({ appSdk, admin }, req, res) => {
   const colletionFirebase = admin.firestore().collection('subscriptions')
@@ -37,11 +37,11 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         const urlDiscount = `/subscriptions/${subscriptionPagarmeId}/discounts`
         const bodyDiscountPagarme = {
           value: discount.value,
-          discount_type: discount.percentage ? 'percentage' : 'flat'
+          discount_type: discount.type === 'percentage' ? 'percentage' : 'flat'
         }
         const requestPagarme = [pagarmeAxios.post(urlDiscount, bodyDiscountPagarme)]
 
-        if (discount.percentage && amount.freight) {
+        if (discount.type === 'percentage' && amount.freight) {
           // discounted percentage is applied to all
           // necessary items add increment referring to the discount on shipping
 
@@ -162,9 +162,58 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               .send({ message: 'Order not found and status is not paid'})
           }
         }
-      } else {
+      } else if (charge.order) {
         // TODO:
         // payment update (order in pagarme)
+        const { order: orderPagarme, status } = charge
+        console.log('>>Parse status: ', parserChangeStatusToEcom(status), ' ', JSON.stringify(orderPagarme))
+        const order = await getOrderIntermediatorTransactionId(appSdk, storeId, orderPagarme.id, auth)
+        console.log('>>> ', JSON.stringify(order))
+        if (order) {
+          if (order.financial_status.current !== parserChangeStatusToEcom(status)) {
+            // updadte status
+            let isUpdateTransaction = false
+            let transactionBody
+            const transaction = order.transactions.find(transaction => transaction.intermediator.transaction_id === orderPagarme.id)
+            console.log('>> Try add payment history')
+            const transactionPagarme = charge.last_transaction
+            console.log('>>> TransactionPagarme ', JSON.stringify(transactionPagarme))
+            let notificationCode = `${type};${body.id};`
+            if (transactionPagarme.transaction_type === 'credit_card') {
+              notificationCode += `${transactionPagarme.gateway_id || ''};`
+              notificationCode += `${transactionPagarme.acquirer_tid || ''};`
+              notificationCode += `${transactionPagarme.acquirer_nsu || ''};`
+              notificationCode += `${transactionPagarme.acquirer_auth_code || ''};`
+            } else if (transactionPagarme.transaction_type === 'boleto') {
+              notificationCode += `${transactionPagarme.gateway_id || ''};`
+            } else if (transactionPagarme.transaction_type === 'pix') {
+              let notes = transaction.notes
+              notes = notes.replaceAll('display:block', 'display:none') // disable QR Code
+              notes = `${notes} # PIX Aprovado`
+              transactionBody = { notes }
+              isUpdateTransaction = true
+            }
+            // pix_provider_tid"
+            const bodyPaymentHistory = {
+              date_time: transactionPagarme.updated_at || new Date().toISOString(),
+              status: parserChangeStatusToEcom(status),
+              notification_code: notificationCode,
+              flags: ['PagarMe']
+            }
+            if (transaction && transaction._id) {
+              bodyPaymentHistory.transaction_id = transaction._id
+            }
+            await addPaymentHistory(appSdk, storeId, order._id, auth, bodyPaymentHistory)
+            console.log(`>> Status update to ${parserChangeStatusToEcom(status)}`)
+            if (isUpdateTransaction && transaction._id) {
+              console.log('>> Try Update transaction ')
+              updateTransaction(appSdk, storeId, order._id, auth, transactionBody, transaction._id)
+                .catch(console.error)
+            }
+            return res.sendStatus(200)
+          }
+        }
+      } else {
         return res.sendStatus(405)
       }
     } else {

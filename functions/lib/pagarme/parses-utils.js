@@ -45,7 +45,17 @@ const parserChangeStatusToEcom = (status) => {
   }
 }
 
+const parseAddress = to => ({
+  city: to.city,
+  state: to.province || to.province_code,
+  country: to.country_code ? to.country_code.toLowerCase() : 'br',
+  zip_code: to.zip,
+  line_1: `${String(to.number) || 's/n'},${to.street},${to.borough}`,
+  line_2: to.complement || ''
+})
+
 module.exports = {
   parserInvoiceStatusToEcom,
-  parserChangeStatusToEcom
+  parserChangeStatusToEcom,
+  parseAddress
 }

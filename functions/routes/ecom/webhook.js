@@ -50,31 +50,34 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
     if (resource === 'orders') {
       if (body?.status === 'cancelled') {
-        const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
-        if (subcriptions && subcriptions[0].status !== 'canceled') {
-          try {
-            console.log(`>> Webhook E-com: Try cancel subscription Pagar.Me code: #${resourceId}`)
-            await pagarmeAxios.delete(`/subscriptions/${subcriptions[0].id}`)
-            console.log('>> Webhook E-com: Successfully canceled')
-            res.send(ECHO_SUCCESS)
-            colletionFirebase.doc(resourceId)
-              .set({
-                status: 'cancelled',
-                updatedAt: new Date().toISOString()
-              }, { merge: true })
-              .catch(console.error)
-          } catch (err) {
-            console.error('>> Webhook E-com: Error when canceling in Pagar.Me, return the status')
-            await updateOrder(appSdk, storeId, resourceId, auth, { status: 'open' })
+        const order = await getOrderById(appSdk, storeId, resourceId, auth)
+        if (order?.transactions[0]?.type === 'recurrence') {
+          const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
+          if (subcriptions && subcriptions[0].status !== 'canceled') {
+            try {
+              console.log(`>> Webhook E-com: Try cancel subscription Pagar.Me code: #${resourceId}`)
+              await pagarmeAxios.delete(`/subscriptions/${subcriptions[0].id}`)
+              console.log('>> Webhook E-com: Successfully canceled')
+              res.send(ECHO_SUCCESS)
+              colletionFirebase.doc(resourceId)
+                .set({
+                  status: 'cancelled',
+                  updatedAt: new Date().toISOString()
+                }, { merge: true })
+                .catch(console.error)
+            } catch (err) {
+              console.error('>> Webhook E-com: Error when canceling in Pagar.Me, return the status')
+              await updateOrder(appSdk, storeId, resourceId, auth, { status: 'open' })
+              res.send(ECHO_SUCCESS)
+            }
+          } else {
+            console.log('>> Webhook E-com: Subscription already canceled or does not exist')
             res.send(ECHO_SUCCESS)
           }
-        } else {
-          console.log('>> Webhook E-com: Subscription already canceled or does not exist')
-          res.send(ECHO_SUCCESS)
         }
+        // edit items order order Original
+        //
       }
-      // edit items order order Original
-      //
     } else if (resource === 'products' && action === 'change') {
       console.log('> Edit product ', resourceId, 's: ', storeId)
 

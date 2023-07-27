@@ -1,6 +1,6 @@
-const { createSubscription } = require('../../../lib/pagarme/subscriptions')
+const { createSubscription, createPayment } = require('../../../lib/pagarme/payment-subscriptions')
 const { getPlanInTransction } = require('../../../lib/pagarme/handle-plans')
-const { parserInvoiceStatusToEcom } = require('../../../lib/pagarme/parse-to-ecom')
+const { parserInvoiceStatusToEcom, parseAddress } = require('../../../lib/pagarme/parses-utils')
 const axios = require('../../../lib/pagarme/axios-create')
 
 exports.post = async ({ appSdk, admin }, req, res) => {
@@ -14,9 +14,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
   const orderId = params.order_id
   // const { amount, buyer, payer, to, items } = params
-  const { amount } = params
+  const { amount, to, buyer } = params
   console.log('> Transaction #', storeId, orderId)
-  console.log('>> ', params.type)
+  console.log('>> Type transaction', params.type)
+  const paymentMethod = params.payment_method.code
 
   // https://apx-mods.e-com.plus/api/v1/create_transaction/response_schema.json?store_id=100
   const transaction = {
@@ -25,16 +26,46 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
   const isRecurrence = params.type === 'recurrence'
   let subscriptionPagarmeId
+  let address
+
+  if (to && to.street) {
+    address = parseAddress(to)
+  } else if (params.billing_address) {
+    address = parseAddress(params.billing_address)
+  }
 
   let redirectToPayment = false
   try {
+    const pagarMeCustomer = {
+      name: buyer.fullname,
+      type: buyer.registry_type === 'j' ? 'company' : 'individual',
+      email: buyer.email,
+      code: buyer.customer_id,
+      document: buyer.doc_number,
+      document_type: buyer.registry_type === 'j' ? 'cnpj' : 'cpf',
+      address,
+      phones: {
+        [`${buyer.phone.type === 'personal' ? 'mobile_phone' : 'home_phone'}`]: {
+          country_code: `${(buyer.phone.country_code || 55)}`,
+          area_code: (buyer.phone.number).substring(0, 2),
+          number: (buyer.phone.number).substring(2)
+        }
+      }
+    }
+    const birthDate = buyer.birth_date
+    if (birthDate && birthDate.year && birthDate.day) {
+      pagarMeCustomer.birthday = `${birthDate.year}-` +
+        `${birthDate.month.toString().padStart(2, '0')}-` +
+        birthDate.day.toString().padStart(2, '0')
+    }
+
     if (isRecurrence) {
       const methodConfigName = params.payment_method.code === 'credit_card' ? appData.credit_card.label : appData.banking_billet.label
       let labelPaymentGateway = params.payment_method.name.replace('- Pagar.me', '')
       labelPaymentGateway = labelPaymentGateway.replace(methodConfigName, '')
 
       const plan = getPlanInTransction(labelPaymentGateway, appData.recurrence)
-      const { data: subcription } = await createSubscription(params, appData, storeId, plan)
+      const { data: subcription } = await createSubscription(params, appData, storeId, plan, pagarMeCustomer)
       console.log('> Response: ', JSON.stringify(subcription))
       subscriptionPagarmeId = subcription.id
       // /invoices
@@ -57,7 +88,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         transaction_reference: `${transactionPagarme.acquirer_tid || ''}`
       }
 
-      if (params.payment_method.code === 'banking_billet') {
+      if (paymentMethod === 'banking_billet') {
         transaction.banking_billet = {
           // code: charge.last_transaction.barcode,
           valid_thrud: charge.last_transaction.due_at,
@@ -89,7 +120,46 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         transaction
       })
     } else {
-      //
+      // type payment
+      const { data: payment } = await createPayment(params, appData, storeId, pagarMeCustomer)
+      console.log('> Response: ', JSON.stringify(payment))
+      const [charge] = payment.charges
+
+      const transactionPagarme = charge.last_transaction
+
+      transaction.status = {
+        updated_at: charge.created_at || new Date().toISOString(),
+        current: parserInvoiceStatusToEcom(charge.status)
+      }
+
+      transaction.intermediator = {
+        transaction_id: payment.id,
+        transaction_code: `${transactionPagarme.acquirer_auth_code || ''}`,
+        transaction_reference: `${transactionPagarme.acquirer_tid || ''}`
+      }
+
+      if (paymentMethod === 'account_deposit') {
+        let notes = '<div style="display:block;margin:0 auto"> '
+        notes += `<img src="${transactionPagarme.qr_code_url}" style="display:block;margin:0 auto"> `
+        // `<input readonly type="text" id="pix-copy" value="${brCode}" />` +
+        // `<button type="button" class="btn btn-sm btn-light" onclick="let codePix = document.getElementById('pix-copy')
+        // codePix.select() document.execCommand('copy')">Copiar Pix</button>`
+        notes += '</div>'
+        transaction.notes = notes
+      } else if (paymentMethod === 'banking_billet') {
+        transaction.banking_billet = {
+          // code: charge.last_transaction.barcode,
+          valid_thrud: charge.last_transaction.due_at,
+          link: charge.last_transaction.pdf
+        }
+        transaction.payment_link = charge.last_transaction.url
+        redirectToPayment = true
+      }
+
+      res.send({
+        redirect_to_payment: redirectToPayment,
+        transaction
+      })
     }
   } catch (error) {
     console.error(error)

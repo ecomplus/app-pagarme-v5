@@ -62,13 +62,13 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
     amount.total = amount.subtotal + (amount.tax || 0) + (amount.freight || 0) + (amount.extra || 0)
     let planDiscount
     if (plan && plan.discount) {
-      if (plan.discount.percentage) {
+      if (plan.discount.type === 'percentage') {
         planDiscount = amount[plan.discount.apply_at]
         planDiscount = planDiscount * ((plan.discount.value) / 100)
       }
     }
     // if the plan doesn't exist, because it's subscription before the update
-    amount.discount = plan ? ((plan.discount && !plan.discount.percentage ? plan.discount.value : planDiscount) || 0) : (amount.discount || 0)
+    amount.discount = plan ? ((plan.discount && plan.discount.type !== 'percentage' ? plan.discount.value : planDiscount) || 0) : (amount.discount || 0)
 
     amount.total -= amount.discount
     amount.total = amount.total > 0 ? amount.total : 0
@@ -129,8 +129,8 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
     current: status
   }
 
-  let notes = `Parcela #${quantity} desconto de ${plan.discount.percentage ? '' : 'R$'}`
-  notes += ` ${plan.discount.value} ${plan.discount.percentage ? '%' : ''}`
+  let notes = `Parcela #${quantity} desconto de ${plan.discount.type === 'percentage' ? '' : 'R$'}`
+  notes += ` ${plan.discount.value} ${plan.discount.type === 'percentage' ? '%' : ''}`
   notes += ` sobre ${plan.discount.apply_at}`
 
   const body = {

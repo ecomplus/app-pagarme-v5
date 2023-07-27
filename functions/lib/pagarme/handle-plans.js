@@ -14,7 +14,7 @@ const discountPlanPayment = (planName, plan, amount) => {
     const discountOption = {
       label: planName,
       value,
-      type: discount.percentage ? 'percentage' : 'fixed'
+      type: discount.type
     }
 
     if (amount.total) {
@@ -29,7 +29,7 @@ const discountPlanPayment = (planName, plan, amount) => {
 
         const maxDiscount = amount[applyDiscount || 'subtotal']
         let discountValue
-        if (discount.percentage && discount.percentage === true) {
+        if (discount.type === 'percentage') {
           discountValue = maxDiscount * discount.value / 100
         } else {
           discountValue = discount.value
