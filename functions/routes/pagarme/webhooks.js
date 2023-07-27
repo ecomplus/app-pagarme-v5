@@ -159,25 +159,24 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           } else {
             console.log('>> Order not found and transaction status is not paid')
             return res.status(400)
-              .send({ message: 'Order not found and status is not paid'})
+              .send({ message: 'Order not found and status is not paid' })
           }
         }
       } else if (charge.order) {
         // TODO:
         // payment update (order in pagarme)
+        console.log('>> Try update status order')
         const { order: orderPagarme, status } = charge
-        console.log('>>Parse status: ', parserChangeStatusToEcom(status), ' ', JSON.stringify(orderPagarme))
         const order = await getOrderIntermediatorTransactionId(appSdk, storeId, orderPagarme.id, auth)
-        console.log('>>> ', JSON.stringify(order))
         if (order) {
           if (order.financial_status.current !== parserChangeStatusToEcom(status)) {
             // updadte status
             let isUpdateTransaction = false
             let transactionBody
             const transaction = order.transactions.find(transaction => transaction.intermediator.transaction_id === orderPagarme.id)
-            console.log('>> Try add payment history')
+            // console.log('>> Try add payment history')
             const transactionPagarme = charge.last_transaction
-            console.log('>>> TransactionPagarme ', JSON.stringify(transactionPagarme))
+            // console.log('>>> TransactionPagarme ', JSON.stringify(transactionPagarme))
             let notificationCode = `${type};${body.id};`
             if (transactionPagarme.transaction_type === 'credit_card') {
               notificationCode += `${transactionPagarme.gateway_id || ''};`
@@ -188,12 +187,12 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               notificationCode += `${transactionPagarme.gateway_id || ''};`
             } else if (transactionPagarme.transaction_type === 'pix') {
               let notes = transaction.notes
+              // pix_provider_tid"
               notes = notes.replaceAll('display:block', 'display:none') // disable QR Code
               notes = `${notes} # PIX Aprovado`
               transactionBody = { notes }
               isUpdateTransaction = true
             }
-            // pix_provider_tid"
             const bodyPaymentHistory = {
               date_time: transactionPagarme.updated_at || new Date().toISOString(),
               status: parserChangeStatusToEcom(status),
@@ -204,12 +203,12 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               bodyPaymentHistory.transaction_id = transaction._id
             }
             await addPaymentHistory(appSdk, storeId, order._id, auth, bodyPaymentHistory)
-            console.log(`>> Status update to ${parserChangeStatusToEcom(status)}`)
             if (isUpdateTransaction && transaction._id) {
-              console.log('>> Try Update transaction ')
+              // console.log('>> Try Update transaction ')
               updateTransaction(appSdk, storeId, order._id, auth, transactionBody, transaction._id)
                 .catch(console.error)
             }
+            console.log(`>> Status update to ${parserChangeStatusToEcom(status)}`)
             return res.sendStatus(200)
           }
         }
