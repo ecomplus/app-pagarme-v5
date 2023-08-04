@@ -493,7 +493,6 @@ const app = {
                   type: 'boolean',
                   default: true,
                   title: 'Desativar desconto na 1ª parcela da recorrência',
-                  description: 'Se desabilitado, desconto considerado na 1ª parcela da recorrência será o desconto do acima'
                 },
                 type: {
                   type: 'string',
