@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 1.0.0 (2023-08-08)
+
+
+### Features
+
+* **single payment:** add single payment ([d24fa59](https://github.com/ecomplus/application-starter/commit/d24fa593d7b26c1f6534589f26d4d66c643a4c14))
+
+
+### Bug Fixes
+
+* **ecom config:** remove description of disable discount option ([433d9a3](https://github.com/ecomplus/application-starter/commit/433d9a3aced4f3b1bc08d9aae6191eb6ce08c668))
+* **webhooks:** fix create new order ([820f003](https://github.com/ecomplus/application-starter/commit/820f0030a186558895b3735090d71f797a3a3012))
+
 ## [1.0.0-starter.26](https://github.com/ecomplus/application-starter/compare/v1.0.0-starter.25...v1.0.0-starter.26) (2022-02-24)
 
 ## [1.0.0-starter.25](https://github.com/ecomplus/application-starter/compare/v1.0.0-starter.24...v1.0.0-starter.25) (2022-02-24)
