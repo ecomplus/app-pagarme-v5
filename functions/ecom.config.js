@@ -527,6 +527,19 @@ const app = {
         }
       },
       hide: false
+    },
+    recurrency_category_ids: {
+      schema: {
+        title: 'Categorias para assinatura',
+        description: 'Opcional para limitar as categorias disponíveis para assinatura, por padrão todos os produtos da loja serão assináveis',
+        type: 'array',
+        items: {
+          type: 'string',
+          pattern: '^[a-f0-9]{24}$',
+          title: 'ID da categoria'
+        }
+      },
+      hide: false
     }
   }
 }
