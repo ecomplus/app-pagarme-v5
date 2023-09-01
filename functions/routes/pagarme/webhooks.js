@@ -6,7 +6,8 @@ const {
   updateTransaction,
   getOrderIntermediatorTransactionId,
   createNewOrderBasedOld,
-  updateOrder
+  updateOrder,
+  checkItemCategory
 } = require('../../lib/store-api/utils')
 
 const { parserChangeStatusToEcom } = require('../../lib/pagarme/parses-utils')
@@ -33,32 +34,64 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         return res.status(404)
           .send({ message: `Subscription code: #${orderOriginalId} not found` })
       } else {
-        const { plan: { discount }, amount } = docSubscription
-        const urlDiscount = `/subscriptions/${subscriptionPagarmeId}/discounts`
-        const bodyDiscountPagarme = {
-          value: discount.value,
-          discount_type: discount.type === 'percentage' ? 'percentage' : 'flat'
-        }
-        const requestPagarme = [pagarmeAxios.post(urlDiscount, bodyDiscountPagarme)]
+        const requestPagarme = []
+        // Check if the product belongs to categories that can be subscribed
+        const categoryIds = appData.recurrency_category_ids
+        const { items: itemsApi } = await getOrderById(appSdk, storeId, orderOriginalId, auth)
 
-        if (discount.type === 'percentage' && amount.freight) {
-          // discounted percentage is applied to all
-          // necessary items add increment referring to the discount on shipping
+        if (categoryIds && Array.isArray(categoryIds) && categoryIds.length) {
+          const { data: { items: itemsPagarme } } = await pagarmeAxios.get(`/subscriptions/${subscriptionPagarmeId}`)
+          const itemsIdPagarmeDelete = await checkItemCategory(appSdk, storeId, auth, categoryIds, itemsPagarme, itemsApi)
 
-          const urlIncrements = `subscriptions/${subscriptionPagarmeId}/increments`
-          const bodyIncremetDifFreightPagarme = {
-            value: ((discount.value / 100) * amount.freight),
-            discount_type: 'flat',
-            item_id: `pi_freight_${orderOriginalId}`
+          const urlRemoveItem = `/subscriptions/${subscriptionPagarmeId}/items/`
+          if (itemsIdPagarmeDelete?.length) {
+            itemsIdPagarmeDelete.forEach(itemId => {
+              requestPagarme.push(pagarmeAxios.delete(`${urlRemoveItem}${itemId}`))
+            })
           }
-          requestPagarme.push(pagarmeAxios.post(urlIncrements, bodyIncremetDifFreightPagarme))
+        }
+
+        const { plan } = docSubscription
+        const { discount } = plan
+        const urlDiscount = `/subscriptions/${subscriptionPagarmeId}/discounts`
+        const bodyDiscountPagarme = { value: discount.value }
+
+        // Add plan discount on each product
+        if (discount.type === 'percentage') {
+          itemsApi?.forEach(item => {
+            requestPagarme.push(pagarmeAxios.post(urlDiscount,
+              {
+                ...bodyDiscountPagarme,
+                discount_type: 'percentage',
+                item_id: `pi_${item.sku}`
+              }
+            ))
+          })
+
+          // Apply shipping discount if app configuration allows
+          if (discount.apply_at !== 'subtotal') {
+            requestPagarme.push(pagarmeAxios.post(urlDiscount,
+              {
+                ...bodyDiscountPagarme,
+                discount_type: 'percentage',
+                item_id: `pi_freight_${orderOriginalId}`
+              }
+            ))
+          }
+        } else {
+          requestPagarme.push(pagarmeAxios.post(urlDiscount,
+            {
+              ...bodyDiscountPagarme,
+              discount_type: 'flat'
+            }
+          ))
         }
 
         try {
           await Promise.all(requestPagarme)
-          console.log('>> Discount and/or increment updated')
+          console.log('>> Updated signature')
           res.status(201)
-            .send({ message: 'Discount and/or increment updated' })
+            .send({ message: 'Updated signature' })
         } catch (error) {
           console.error(error)
           const errCode = 'WEBHOOK_PAGARME_INVOICE_CREATED'
@@ -148,7 +181,32 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             const docSubscription = documentSnapshot.exists && documentSnapshot.data()
             if (orderOriginal && docSubscription) {
               const { plan } = docSubscription
+
               await createNewOrderBasedOld(appSdk, storeId, auth, orderOriginal, plan, 'paid', charge, subscription)
+
+              // Check if the product belongs to categories that can be subscribed, for next recurrence
+              const categoryIds = appData.recurrency_category_ids
+              if (categoryIds && Array.isArray(categoryIds) && categoryIds.length) {
+                const requestPagarme = []
+                const itemsPagarme = subscription.items
+                const itemsApi = orderOriginal.items
+                const itemsIdPagarmeDelete = await checkItemCategory(appSdk, storeId, auth, categoryIds, itemsPagarme, itemsApi)
+
+                const urlRemoveItem = `/subscriptions/${invoice.subscriptionId}/items/`
+                if (itemsIdPagarmeDelete?.length) {
+                  itemsIdPagarmeDelete.forEach(itemId => {
+                    requestPagarme.push(pagarmeAxios.delete(`${urlRemoveItem}${itemId}`))
+                  })
+                }
+
+                try {
+                  console.log('>> Updated signature, for next recurrence')
+                  await Promise.all(requestPagarme)
+                } catch (err) {
+                  console.warn(err)
+                }
+              }
+
               console.log('>> Create new Order')
               return res.sendStatus(201)
             } else {

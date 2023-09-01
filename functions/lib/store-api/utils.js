@@ -1,4 +1,5 @@
 const ecomUtils = require('@ecomplus/utils')
+
 const getOrderById = async (appSdk, storeId, orderId, auth) => {
   const { response: { data } } = await appSdk.apiRequest(storeId, `/orders/${orderId}.json`, 'GET', null, auth)
   return data
@@ -37,7 +38,7 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
       items.splice(i, 1)
     } else {
       const itemFound = itemsPagarme.find(itemFind => itemFind.id === `pi_${item.sku}`)
-      console.log('>> Item ', JSON.stringify(itemFound))
+      // console.log('>> Item ', JSON.stringify(itemFound))
       if (itemFound) {
         item.quantity = itemFound.quantity
         if (item.final_price) {
@@ -51,11 +52,6 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
       }
     }
   }
-
-  // TODO:
-  // Freigth is an item on PagarMe
-  // there is an increment in the subscription referring to the freight
-  // if the plan discount is only in the subtotal and the discount is in percentage
 
   if (subtotal > 0) {
     amount.subtotal = subtotal
@@ -87,7 +83,7 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
   const paymentMethodLabel = oldOrder.payment_method_label
   const originalTransaction = oldOrder.transactions[0]
 
-  const quantity = charge.code?.replace(`${oldOrder._id}-`, '')
+  const portion = charge.code?.replace(`${oldOrder._id}-`, '')
   const itemsPagarme = subscriptionPagarme.items
 
   checkItemsAndRecalculeteOrder(amount, items, plan, itemsPagarme)
@@ -117,7 +113,7 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
       payment_method: originalTransaction.payment_method,
       app: originalTransaction.app,
       _id: ecomUtils.randomObjectId(),
-      notes: `Parcela #${quantity} referente à ${subscriptionPagarme?.statement_descriptor || 'Assinatura'}`,
+      notes: `Parcela #${portion} referente à ${plan?.label || 'Assinatura'}`,
       custom_fields: originalTransaction.custom_fields
     }
   ]
@@ -129,7 +125,7 @@ const createNewOrderBasedOld = (appSdk, storeId, auth, oldOrder, plan, status, c
     current: status
   }
 
-  let notes = `Parcela #${quantity} desconto de ${plan.discount.type === 'percentage' ? '' : 'R$'}`
+  let notes = `Parcela #${portion} desconto de ${plan.discount.type === 'percentage' ? '' : 'R$'}`
   notes += ` ${plan.discount.value} ${plan.discount.type === 'percentage' ? '%' : ''}`
   notes += ` sobre ${plan.discount.apply_at}`
 
@@ -171,6 +167,44 @@ const getProductById = async (appSdk, storeId, productId, auth) => {
   return data
 }
 
+const checkItemCategory = async (appSdk, storeId, auth, categoryIds, itemsPagarme, itemsApi) => {
+  let i = 0
+
+  const itemsIdPagarmeDelete = []
+  while (i < itemsPagarme.length) {
+    const itemPagarme = itemsPagarme[i]
+    // Obs.: freight is one item, initially do not remove freight
+    const isItemFreigth = itemPagarme?.id?.startsWith('pi_freight_')
+    const itemFound = itemsApi.find(itemFind => itemPagarme.id === `pi_${itemFind.sku}`)
+    const itemFoundIndex = itemsApi.indexOf(itemFound)
+
+    if (itemFound && !isItemFreigth) {
+      const product = await getProductById(appSdk, storeId, itemFound.product_id, auth)
+      if (product.categories) {
+        let canSign = false
+        product.categories.forEach(category => {
+          if (categoryIds.includes(category._id)) {
+            canSign = true
+          }
+        })
+
+        if (!canSign) {
+          itemsIdPagarmeDelete.push(itemPagarme.id)
+          itemsApi.splice(itemFoundIndex, 1)
+        }
+      } else {
+        itemsIdPagarmeDelete.push(itemPagarme.id)
+        itemsApi.splice(itemFoundIndex, 1)
+      }
+    } else if (!isItemFreigth) {
+      itemsIdPagarmeDelete.push(itemPagarme.id)
+    }
+    i += 1
+  }
+
+  return itemsIdPagarmeDelete
+}
+
 module.exports = {
   getOrderById,
   addPaymentHistory,
@@ -179,5 +213,6 @@ module.exports = {
   createNewOrderBasedOld,
   updateOrder,
   getOrderWithQueryString,
-  getProductById
+  getProductById,
+  checkItemCategory
 }
