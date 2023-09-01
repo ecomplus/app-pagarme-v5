@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/ecomplus/application-starter/compare/v1.0.0...v1.1.0) (2023-09-01)
+
+
+### Features
+
+* **webhook utils:** checks if item belongs to category that can be signed ([a217677](https://github.com/ecomplus/application-starter/commit/a2176779d37670f710abf6a284559af06ca36079))
+
 ## 1.0.0 (2023-08-08)
 
 
