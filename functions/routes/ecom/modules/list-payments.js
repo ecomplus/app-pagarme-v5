@@ -24,7 +24,7 @@ exports.post = ({ appSdk }, req, res) => {
   }
 
   const paymentTypes = []
-  if (config.recurrence && config.recurrence.length) {
+  if (config.recurrence && config.recurrence.length && config.recurrence[0].label) {
     paymentTypes.push('recurrence')
   }
 
