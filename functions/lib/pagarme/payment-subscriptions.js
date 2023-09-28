@@ -207,7 +207,9 @@ const createPayment = async (params, appData, storeId, customer) => {
       installments: params.installments_number || 1,
       statement_descriptor: statementDescriptor.substring(13),
       card_token: params.credit_card.hash,
-      billing_address: address
+      card: {
+        billing_address: address
+      }
     }
   } else if (paymentMethod === 'pix') {
     payment.pix = {
@@ -222,11 +224,6 @@ const createPayment = async (params, appData, storeId, customer) => {
   }
 
   pagarmeOrder.payments = [payment]
-
-  pagarmeOrder.billing = {
-    name: customer.name,
-    address,
-  }
 
   console.log('> Order PagarMe: ', JSON.stringify(pagarmeOrder))
 
