@@ -146,7 +146,7 @@ const createPayment = async (params, appData, storeId, customer) => {
   // const orderId = params.order_id
   const { amount, items } = params
 
-  const address = parseAddress(params.billing_address)
+  const address = parseAddress(params.to || params.billing_address)
 
   console.log('>>Try payment')
   let discountEach
@@ -206,7 +206,8 @@ const createPayment = async (params, appData, storeId, customer) => {
       operation_type: 'auth_and_capture', // auth_only
       installments: params.installments_number || 1,
       statement_descriptor: statementDescriptor.substring(13),
-      card_token: params.credit_card.hash
+      card_token: params.credit_card.hash,
+      billing_address: address
     }
   } else if (paymentMethod === 'pix') {
     payment.pix = {
@@ -215,7 +216,8 @@ const createPayment = async (params, appData, storeId, customer) => {
   } else {
     payment.boleto = {
       due_at: new Date(new Date().getTime() + ((methodConfig.days_due_date || 1) * 24 * 60 * 60 * 1000)).toISOString(),
-      instructions: methodConfig.instructions || statementDescriptor
+      instructions: methodConfig.instructions || statementDescriptor,
+      billing_address: address
     }
   }
 
