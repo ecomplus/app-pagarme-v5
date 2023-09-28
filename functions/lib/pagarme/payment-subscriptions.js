@@ -223,7 +223,7 @@ const createPayment = async (params, appData, storeId, customer) => {
 
   pagarmeOrder.payments = [payment]
 
-  pagarmeOrder. billing = {
+  pagarmeOrder.billing = {
     name: customer.name,
     address,
   }
