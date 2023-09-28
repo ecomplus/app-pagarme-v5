@@ -223,6 +223,11 @@ const createPayment = async (params, appData, storeId, customer) => {
 
   pagarmeOrder.payments = [payment]
 
+  pagarmeOrder. billing = {
+    name: customer.name,
+    address,
+  }
+
   console.log('> Order PagarMe: ', JSON.stringify(pagarmeOrder))
 
   return pagarmeAxios.post(
