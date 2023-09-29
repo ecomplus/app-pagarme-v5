@@ -146,6 +146,14 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         // codePix.select() document.execCommand('copy')">Copiar Pix</button>`
         notes += '</div>'
         transaction.notes = notes
+        if (transactionPagarme.qr_code) {
+          transaction.intermediator.transaction_code = transactionPagarme.qr_code
+        }
+        if (transactionPagarme.expires_at) {
+          transaction.account_deposit = {
+            valid_thru: transactionPagarme.expires_at
+          }
+        }
       } else if (paymentMethod === 'banking_billet') {
         transaction.banking_billet = {
           // code: charge.last_transaction.barcode,
