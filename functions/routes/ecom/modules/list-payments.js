@@ -18,41 +18,34 @@ exports.post = async ({ appSdk }, req, res) => {
   let hasRecurrence = false
   let isAllRecurring = true
 
-  const recurrenceProducts = []
-  let i = 0
-  while (i < categoryIds.length) {
+  if (categoryIds.length) {
     try {
       const { data } = await ecomClient.search({
         storeId,
         url: '/items.json',
+        method: 'post',
         data: {
+          size: items.length,
           query: {
             bool: {
-              must: {
-                term: { 'categories._id': categoryIds[i] }
-              }
+              must: [
+                { terms: { '_id': items.map((item) => item.product_id) } },
+                { terms: { 'categories._id': categoryIds } },
+              ]
             }
           }
         }
       })
 
-      data?.hits?.hits?.forEach(product => {
-        recurrenceProducts.push(product._id)
-      })
+      hasRecurrence = data?.hits.total > 0
+      isAllRecurring = data?.hits.total === items.length
+
+      console.log(`${JSON.stringify(data?.hits.total)} isAllRecurring: ${isAllRecurring} hasRecurrence: ${hasRecurrence}`)
+
     } catch (err) {
       // console.error(err)
     }
-
-    i += 1
   }
-
-  items?.forEach(item => {
-    if (recurrenceProducts.includes(item.product_id)) {
-      hasRecurrence = true
-    } else {
-      isAllRecurring = false
-    }
-  })
 
   if (!configApp.pagarme_api_token || !configApp.pagarme_public_key) {
     return res.status(409).send({
