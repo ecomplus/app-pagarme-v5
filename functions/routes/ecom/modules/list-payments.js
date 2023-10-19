@@ -3,15 +3,58 @@ const path = require('path')
 const fs = require('fs')
 const addInstallments = require('../../../lib/payments/add-installments')
 const { discountPlanPayment } = require('../../../lib/pagarme/handle-plans')
+const ecomClient = require('@ecomplus/client')
 
-exports.post = ({ appSdk }, req, res) => {
+exports.post = async ({ appSdk }, req, res) => {
   // https://apx-mods.e-com.plus/api/v1/list_payments/schema.json?store_id=100
   const { params, application } = req.body
-  // const amount = params.amount || {}
-  // const initialTotalAmount = amount.total
+  const { storeId } = req
 
-  const config = Object.assign({}, application.data, application.hidden_data)
-  if (!config.pagarme_api_token || !config.pagarme_public_key) {
+  const { items } = params
+
+  const configApp = Object.assign({}, application.data, application.hidden_data)
+
+  const categoryIds = configApp.recurrency_category_ids
+  let hasRecurrence = false
+  let isAllRecurring = true
+
+  const recurrenceProducts = []
+  let i = 0
+  while (i < categoryIds.length) {
+    try {
+      const { data } = await ecomClient.search({
+        storeId,
+        url: '/items.json',
+        data: {
+          query: {
+            bool: {
+              must: {
+                term: { 'categories._id': categoryIds[i] }
+              }
+            }
+          }
+        }
+      })
+
+      data?.hits?.hits?.forEach(product => {
+        recurrenceProducts.push(product._id)
+      })
+    } catch (err) {
+      // console.error(err)
+    }
+
+    i += 1
+  }
+
+  items?.forEach(item => {
+    if (recurrenceProducts.includes(item.product_id)) {
+      hasRecurrence = true
+    } else {
+      isAllRecurring = false
+    }
+  })
+
+  if (!configApp.pagarme_api_token || !configApp.pagarme_public_key) {
     return res.status(409).send({
       error: 'NO_PAGARME_KEYS',
       message: 'Chave de API e/ou criptografia não configurada (lojista deve configurar o aplicativo)'
@@ -24,12 +67,11 @@ exports.post = ({ appSdk }, req, res) => {
   }
 
   const paymentTypes = []
-  if (config.recurrence && config.recurrence.length && config.recurrence[0].label) {
+  if (configApp.recurrence && configApp.recurrence.length && configApp.recurrence[0].label && isAllRecurring) {
     paymentTypes.push('recurrence')
   }
 
-  // console.log('>>> ', config)
-  if (!config.credit_card.disable || !config.banking_billet.disable || !config.account_deposit.disable) {
+  if ((!hasRecurrence) && (!configApp.credit_card.disable || !configApp.banking_billet.disable || !configApp.account_deposit.disable)) {
     paymentTypes.push('payment')
   }
 
@@ -42,21 +84,21 @@ exports.post = ({ appSdk }, req, res) => {
 
   const listPaymentMethod = ['credit_card', 'banking_billet']
 
-  if (!config.account_deposit?.disable) {
+  if (!configApp.account_deposit?.disable) {
     listPaymentMethod.push('account_deposit')
   }
 
   paymentTypes.forEach(type => {
     // At first the occurrence only with credit card
     const isRecurrence = type === 'recurrence'
-    const plans = isRecurrence ? config.recurrence : ['single_payment']
+    const plans = isRecurrence ? configApp.recurrence : ['single_payment']
     plans.forEach(plan => {
       listPaymentMethod.forEach(paymentMethod => {
         // console.log('>> List Payments ', type, ' ', plan, ' ', paymentMethod)
         const amount = { ...params.amount } || {}
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
-        const methodConfig = config[paymentMethod] || {}
+        const methodConfig = configApp[paymentMethod] || {}
         let methodEnable = isRecurrence ? methodConfig.enable_recurrence : !methodConfig.disable
 
         // Pix not active in recurrence
@@ -90,7 +132,7 @@ exports.post = ({ appSdk }, req, res) => {
           if (isRecurrence) {
             discount = discountPlanPayment(label, plan, amount)
           } else {
-            discount = config.discount
+            discount = configApp.discount
           }
 
           if (discount) {
@@ -146,7 +188,7 @@ exports.post = ({ appSdk }, req, res) => {
             // https://github.com/pagarme/pagarme-js
             gateway.js_client = {
               script_uri: 'https://checkout.pagar.me/v1/tokenizecard.js',
-              onload_expression: `window._pagarmeKey="${config.pagarme_public_key}";` +
+              onload_expression: `window._pagarmeKey="${configApp.pagarme_public_key}";` +
                 fs.readFileSync(path.join(__dirname, '../../../assets/dist/onload-expression.min.js'), 'utf8'),
               cc_hash: {
                 function: '_pagarmeHash',
@@ -154,7 +196,7 @@ exports.post = ({ appSdk }, req, res) => {
               }
             }
             if (!isRecurrence) {
-              const { installments } = config
+              const { installments } = configApp
               if (installments) {
                 // list all installment options and default one
                 addInstallments(amount, installments, gateway, response)
