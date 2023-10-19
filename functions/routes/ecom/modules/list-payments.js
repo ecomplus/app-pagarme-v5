@@ -40,7 +40,7 @@ exports.post = async ({ appSdk }, req, res) => {
       hasRecurrence = data?.hits.total > 0
       isAllRecurring = data?.hits.total === items.length
 
-      console.log(`${JSON.stringify(data?.hits.total)} isAllRecurring: ${isAllRecurring} hasRecurrence: ${hasRecurrence}`)
+      // console.log(`${JSON.stringify(data?.hits.total)} isAllRecurring: ${isAllRecurring} hasRecurrence: ${hasRecurrence}`)
 
     } catch (err) {
       // console.error(err)
