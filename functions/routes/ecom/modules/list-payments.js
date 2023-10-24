@@ -18,7 +18,7 @@ exports.post = async ({ appSdk }, req, res) => {
   let hasRecurrence = false
   let isAllRecurring = true
 
-  if (categoryIds.length) {
+  if (categoryIds && categoryIds.length) {
     try {
       const { data } = await ecomClient.search({
         storeId,
