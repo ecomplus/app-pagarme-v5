@@ -137,7 +137,6 @@ exports.post = async ({ appSdk }, req, res) => {
           if (discount) {
             if (isRecurrence) {
               if (plan.discount_first_installment &&
-                !plan.discount_first_installment.disable &&
                 plan.discount_first_installment.value
               ) {
                 gateway.discount = plan.discount_first_installment
@@ -216,6 +215,6 @@ exports.post = async ({ appSdk }, req, res) => {
     })
   })
 
-  console.log(`Response: ${JSON.stringify(response?.payment_gateways)}`)
+  // console.log(`Response: ${JSON.stringify(response?.payment_gateways)}`)
   res.send(response)
 }

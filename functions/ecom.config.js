@@ -489,11 +489,6 @@ const app = {
               title: 'Desconto 1ª parcela',
               type: 'object',
               properties: {
-                disable: {
-                  type: 'boolean',
-                  default: true,
-                  title: 'Desativar desconto na 1ª parcela da recorrência',
-                },
                 type: {
                   type: 'string',
                   enum: [
