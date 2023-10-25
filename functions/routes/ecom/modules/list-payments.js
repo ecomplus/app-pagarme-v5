@@ -216,6 +216,6 @@ exports.post = async ({ appSdk }, req, res) => {
     })
   })
 
-  console.log(`Response: ${response?.payment_gateways}`)
+  console.log(`Response: ${JSON.stringify(response?.payment_gateways)}`)
   res.send(response)
 }
