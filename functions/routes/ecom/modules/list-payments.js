@@ -81,13 +81,14 @@ exports.post = async ({ appSdk }, req, res) => {
     listPaymentMethod.push('account_deposit')
   }
 
+  console.log(`APP: ${JSON.stringify(configApp)}`)
   paymentTypes.forEach(type => {
     // At first the occurrence only with credit card
     const isRecurrence = type === 'recurrence'
     const plans = isRecurrence ? configApp.recurrence : ['single_payment']
     plans.forEach(plan => {
       listPaymentMethod.forEach(paymentMethod => {
-        console.log('>> List Payments ', type, ' ', plan, ' ', paymentMethod, ' storeID:', storeId)
+        console.log(`>> List Payments ${type} plan: ${JSON.stringify(plan)} ${paymentMethod} storeID: ${storeId}`)
         const amount = { ...params.amount } || {}
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
