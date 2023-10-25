@@ -87,7 +87,7 @@ exports.post = async ({ appSdk }, req, res) => {
     const plans = isRecurrence ? configApp.recurrence : ['single_payment']
     plans.forEach(plan => {
       listPaymentMethod.forEach(paymentMethod => {
-        // console.log('>> List Payments ', type, ' ', plan, ' ', paymentMethod)
+        console.log('>> List Payments ', type, ' ', plan, ' ', paymentMethod, ' storeID:', storeId)
         const amount = { ...params.amount } || {}
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
