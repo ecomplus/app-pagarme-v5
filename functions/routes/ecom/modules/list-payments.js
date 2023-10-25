@@ -81,7 +81,7 @@ exports.post = async ({ appSdk }, req, res) => {
     listPaymentMethod.push('account_deposit')
   }
 
-  console.log(`APP: ${JSON.stringify(configApp)}`)
+  // console.log(`APP: ${JSON.stringify(configApp)}`)
   paymentTypes.forEach(type => {
     // At first the occurrence only with credit card
     const isRecurrence = type === 'recurrence'
@@ -92,7 +92,11 @@ exports.post = async ({ appSdk }, req, res) => {
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
         const methodConfig = configApp[paymentMethod] || {}
-        let methodEnable = isRecurrence ? methodConfig.enable_recurrence : !methodConfig.disable
+        let methodEnable = !methodConfig.disable
+
+        if (methodEnable && isRecurrence) {
+          methodEnable = methodConfig.enable_recurrence
+        }
 
         console.log(`>>list: #${storeId} ${type} - ${paymentMethod} - ${methodEnable}  plan: ${JSON.stringify(plan)}`)
 
