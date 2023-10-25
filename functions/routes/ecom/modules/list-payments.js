@@ -98,7 +98,7 @@ exports.post = async ({ appSdk }, req, res) => {
           methodEnable = methodConfig.enable_recurrence
         }
 
-        console.log(`>>list: #${storeId} ${type} - ${paymentMethod} - ${methodEnable}  plan: ${JSON.stringify(plan)}`)
+        // console.log(`>>list: #${storeId} ${type} - ${paymentMethod} - ${methodEnable}  plan: ${JSON.stringify(plan)}`)
 
         // Pix not active in recurrence
         methodEnable = isPix && isRecurrence ? false : methodEnable
@@ -208,6 +208,5 @@ exports.post = async ({ appSdk }, req, res) => {
     })
   })
 
-  console.log(`>> Response ${JSON.stringify(response?.payment_gateways)}`)
   res.send(response)
 }
