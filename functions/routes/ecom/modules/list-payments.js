@@ -88,12 +88,13 @@ exports.post = async ({ appSdk }, req, res) => {
     const plans = isRecurrence ? configApp.recurrence : ['single_payment']
     plans.forEach(plan => {
       listPaymentMethod.forEach(paymentMethod => {
-        console.log(`>> List Payments ${type} plan: ${JSON.stringify(plan)} ${paymentMethod} storeID: ${storeId}`)
         const amount = { ...params.amount } || {}
         const isCreditCard = paymentMethod === 'credit_card'
         const isPix = paymentMethod === 'account_deposit'
         const methodConfig = configApp[paymentMethod] || {}
         let methodEnable = isRecurrence ? methodConfig.enable_recurrence : !methodConfig.disable
+
+        console.log(`>>list: #${storeId} ${type} - ${paymentMethod} - ${methodEnable}  plan: ${JSON.stringify(plan)}`)
 
         // Pix not active in recurrence
         methodEnable = isPix && isRecurrence ? false : methodEnable
