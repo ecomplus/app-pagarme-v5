@@ -2,7 +2,9 @@ const discountPlanPayment = (planName, plan, amount) => {
   let discount
   // console.log('>>Plan ', plan)
   if (plan.discount_first_installment &&
-    !plan.discount_first_installment.disable) {
+    !plan.discount_first_installment.disable &&
+    plan.discount_first_installment.value
+  ) {
     discount = plan.discount_first_installment
   } else {
     discount = plan.discount

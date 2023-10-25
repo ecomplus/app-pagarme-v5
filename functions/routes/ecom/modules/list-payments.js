@@ -136,7 +136,15 @@ exports.post = async ({ appSdk }, req, res) => {
 
           if (discount) {
             if (isRecurrence) {
-              gateway.discount = !plan.discount_first_installment?.disable ? plan.discount_first_installment : plan.discount
+              if (plan.discount_first_installment &&
+                !plan.discount_first_installment.disable &&
+                plan.discount_first_installment.value
+              ) {
+                gateway.discount = plan.discount_first_installment
+              } else {
+                gateway.discount = plan.discount
+              }
+
               gateway.discount.type = discount.discountOption.type
               response.discount_option = discount.discountOption
             } else if (discount[paymentMethod]) {
@@ -208,5 +216,6 @@ exports.post = async ({ appSdk }, req, res) => {
     })
   })
 
+  console.log(`Response: ${response?.payment_gateways}`)
   res.send(response)
 }
