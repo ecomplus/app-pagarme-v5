@@ -117,7 +117,6 @@ exports.post = async ({ appSdk }, req, res) => {
           const gateway = {
             label,
             icon: methodConfig.icon,
-            text: methodConfig.text,
             payment_method: {
               code: paymentMethod,
               name: `${isRecurrence ? `Assinatura ${plan.periodicity} ` : ''}` +
@@ -125,6 +124,10 @@ exports.post = async ({ appSdk }, req, res) => {
             },
             type,
             intermediator
+          }
+
+          if (!isRecurrence && methodConfig.text) {
+            gateway.text = methodConfig.text
           }
 
           let discount
@@ -145,7 +148,7 @@ exports.post = async ({ appSdk }, req, res) => {
               }
 
               gateway.discount.type = discount.discountOption.type
-              response.discount_option = discount.discountOption
+              // response.discount_option = discount.discountOption
             } else if (discount[paymentMethod]) {
               gateway.discount = {
                 apply_at: discount.apply_at,
