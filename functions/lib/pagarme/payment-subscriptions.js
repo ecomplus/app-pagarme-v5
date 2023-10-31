@@ -75,6 +75,9 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
 
   if (paymentMethod === 'credit_card') {
     pagarmeSubscription.card_token = params.credit_card.hash
+    pagarmeSubscription.card = {
+      billing_address: address
+    }
   }
 
   pagarmeSubscription.discounts = []
