@@ -103,8 +103,9 @@ exports.post = async ({ appSdk }, req, res) => {
         // Pix not active in recurrence
         methodEnable = isPix && isRecurrence ? false : methodEnable
 
-        const minAmount = methodConfig?.min_amount || 0
-        const validateAmount = amount.total ? (amount.total >= minAmount) : true // Workaround for showcase
+        const minAmount = (isRecurrence ? plan?.min_amount : methodConfig?.min_amount) || 0
+
+        const validateAmount = amount.subtotal ? (amount.subtotal >= minAmount) : true // Workaround for showcase
         if (methodEnable && validateAmount) {
           let label = isRecurrence ? plan.label : methodConfig.label
           if (!label) {

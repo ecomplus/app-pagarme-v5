@@ -449,6 +449,14 @@ const app = {
               title: 'Periodicidade da recorrência',
               description: 'Definir a periodicidade da recorrência.'
             },
+            min_amount: {
+              type: 'number',
+              minimum: 0,
+              maximum: 999999999,
+              title: 'Pedido mínimo',
+              default: 0,
+              description: 'Montante mínimo para listar o plano'
+            },
             discount: {
               title: 'Desconto',
               type: 'object',
