@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/ecomplus/application-starter/compare/v1.1.0...v1.2.0) (2023-11-01)
+
+
+### Features
+
+* **list payments:** minimum value for recurrence ([ae7e335](https://github.com/ecomplus/application-starter/commit/ae7e335028efe15129821b85b0be2fb1eb238e87))
+
+
+### Bug Fixes
+
+* **create payment:** add billing adrress ([7c9cd8c](https://github.com/ecomplus/application-starter/commit/7c9cd8c974dfd9f494a9c213c2cd7afcc1a811bc))
+* **create payment:** update field credit card ([06e1e76](https://github.com/ecomplus/application-starter/commit/06e1e761040c75f221ec9d07ceb907813657746b))
+* **create-transaction:** ensure shipping address zip code format ([002b948](https://github.com/ecomplus/application-starter/commit/002b948b07559440dcf3f678f5b1c318e28cd280))
+* **discount:** case discount first installment is undefined ([31797af](https://github.com/ecomplus/application-starter/commit/31797af259c44f9637aa2246d8cf960b50f2de61))
+* **discount:** remove field disable discount on first installment ([2fc8421](https://github.com/ecomplus/application-starter/commit/2fc8421f406a9f7ac1806270a77460de8778d159))
+* **list payment:** check which payment type will display ([288816d](https://github.com/ecomplus/application-starter/commit/288816d6c45df7f2a329ed10b0b88db34b542c45))
+* **list payment:** disable unnecessary logging ([1edd633](https://github.com/ecomplus/application-starter/commit/1edd633567f29212dc806b7053d0269b7ad27256))
+* **list payments:** disable all payments that are inactive ([18106a8](https://github.com/ecomplus/application-starter/commit/18106a85de26fc586d48e10a00309b58d28f6b66))
+* **list payments:** remove discount_option in recurrence ([72eb753](https://github.com/ecomplus/application-starter/commit/72eb753c5ad85acb7585adbea584bfa2c33f7ea1))
+* **list payment:** update query in search API ([9876624](https://github.com/ecomplus/application-starter/commit/9876624a3f6de2c358d797ca9faac79f3c3859b7))
+* **list-payments:** check if has category ids ([22ade5d](https://github.com/ecomplus/application-starter/commit/22ade5d165a5823a1861f87c8549923e09d49260))
+* **payload payment:** add field billing ([c5e8c56](https://github.com/ecomplus/application-starter/commit/c5e8c563cae15d23f1b5cc546b4d1f529bf95090))
+* **payload payment:** add field billing ([3a71aba](https://github.com/ecomplus/application-starter/commit/3a71aba411a4a9adc2608eea09a1ea0010bf4065))
+
 ## [1.1.0](https://github.com/ecomplus/application-starter/compare/v1.0.0...v1.1.0) (2023-09-01)
 
 
