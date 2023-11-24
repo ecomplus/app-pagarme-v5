@@ -51,7 +51,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     if (resource === 'orders') {
       if (body?.status === 'cancelled') {
         const order = await getOrderById(appSdk, storeId, resourceId, auth)
-        if (order?.transactions[0]?.type === 'recurrence') {
+        if (order?.transactions?.length && order?.transactions[0]?.type === 'recurrence') {
           const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
           if (subcriptions && subcriptions[0].status !== 'canceled') {
             try {
@@ -74,6 +74,8 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             console.log('>> Webhook E-com: Subscription already canceled or does not exist')
             res.send(ECHO_SUCCESS)
           }
+        } else {
+          console.warn(`Warn: Order ${order ? JSON.stringify(order) : ' not found'}`)
         }
         // edit items order order Original
         //
@@ -146,10 +148,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               //
               await Promise.all(updateItemPagarme.map(itemPagarme => {
                 return pagarmeAxios.put(
-                    `/subscriptions/${itemPagarme.subscription_id}/items/${itemPagarme.item.id}`,
-                    {
-                      ...itemPagarme.item
-                    }
+                  `/subscriptions/${itemPagarme.subscription_id}/items/${itemPagarme.item.id}`,
+                  {
+                    ...itemPagarme.item
+                  }
                 )
               }))
               console.log('>>> Update SUCESSS')
