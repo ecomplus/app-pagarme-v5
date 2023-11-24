@@ -269,6 +269,8 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             console.log(`>> Status update to ${parserChangeStatusToEcom(status)}`)
             return res.sendStatus(200)
           }
+        } else {
+          return res.sendStatus(404)
         }
       } else {
         return res.sendStatus(405)
