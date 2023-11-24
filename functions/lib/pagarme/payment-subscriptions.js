@@ -193,7 +193,7 @@ const createPayment = async (params, appData, storeId, customer) => {
       const itemOrder = {
         quantity: item.quantity,
         description: item.name || item.variation_id || item.product_id,
-        code: item.sku || item.variation_id || item.product_id,
+        code: item.sku?.substring(0, 52) || item.variation_id || item.product_id,
         amount: Math.floor(((item.final_price || item.price) - (discountEach || 0)) * 100)
       }
       pagarmeOrder.items.push(itemOrder)
