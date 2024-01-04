@@ -202,7 +202,7 @@ const createPayment = async (params, appData, storeId, customer) => {
 
   const payment = {
     payment_method: paymentMethod,
-    amount: Math.floor((amount.total)) * 100
+    amount: Math.floor((amount.total) * 100)
   }
 
   if (paymentMethod === 'credit_card') {
