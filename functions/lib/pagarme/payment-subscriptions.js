@@ -79,6 +79,14 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
     pagarmeSubscription.card = {
       billing_address: address
     }
+    if (plan.installment_period) {
+      if (intervalPlan.interval === 'year') {
+        pagarmeSubscription.installments = 12
+      } else {
+        pagarmeSubscription.installments = intervalPlan.interval_count || 1
+      }
+      
+    }
   }
 
   pagarmeSubscription.discounts = []
