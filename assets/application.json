@@ -363,6 +363,12 @@
               "default": 0,
               "description": "Montante mínimo para listar o plano"
             },
+            "installment_period": {
+              "type": "boolean",
+              "title": "Habilitar parcelamento igual ao período assinado",
+              "default": false,
+              "description": "Se habilitado, a assinatura será parcelada x vezes o período. Exemplo: Assinatura trimestral, o cliente irá pagar a assinatura dividida por 3 meses."
+            },
             "discount": {
               "title": "Desconto",
               "type": "object",
