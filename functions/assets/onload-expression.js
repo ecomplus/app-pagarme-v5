@@ -11,23 +11,6 @@
         cvv: cardClient.cvc
       }
 
-      if (storeId == 8192) {
-        function success(data) {
-          console.log(data)
-          if (data.id) {
-            resolve(data.id)
-          }
-          throw new Error('Credencial inválida')
-        };
-    
-        function fail(error) {
-          console.log('store id error', error)
-          reject(error)
-        };
-    
-        PagarmeCheckout.init(success,fail)
-        }
-
       const resp = await fetch(
         `https://api.pagar.me/core/v5/tokens?appId=${apiKey}`,
         {
