@@ -74,7 +74,7 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
   }
 
   if (paymentMethod === 'credit_card') {
-    pagarmeSubscription.card_token = params.credit_card.hash
+    pagarmeSubscription.card_token = params.credit_card && params.credit_card.hash
     const address = parseAddress(params.to || params.billing_address)
     pagarmeSubscription.card = {
       billing_address: address
@@ -218,7 +218,7 @@ const createPayment = async (params, appData, storeId, customer) => {
       operation_type: 'auth_and_capture', // auth_only
       installments: params.installments_number || 1,
       statement_descriptor: statementDescriptor.substring(13),
-      card_token: params.credit_card.hash,
+      card_token: params.credit_card && params.credit_card.hash,
       card: {
         billing_address: address
       }
