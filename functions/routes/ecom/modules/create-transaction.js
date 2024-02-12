@@ -84,7 +84,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
       transaction.intermediator = {
         transaction_id: invoices[0].id,
-        transaction_code: `${transactionPagarme.acquirer_auth_code || ''}`,
+        transaction_code: `${subcription.id || ''}`,
         transaction_reference: `${transactionPagarme.acquirer_tid || ''}`
       }
 
