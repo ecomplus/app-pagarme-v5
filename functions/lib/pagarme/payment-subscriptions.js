@@ -87,9 +87,6 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
       }
       
     }
-    if (storeId == 4566) {
-      pagarmeSubscription.installments = 3
-    }
   }
 
   pagarmeSubscription.discounts = []
