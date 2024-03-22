@@ -66,12 +66,12 @@ exports.post = async ({ appSdk, admin }, req, res) => {
                 }, { merge: true })
                 .catch(console.error)
             } catch (err) {
-              console.error('>> Webhook E-com: Error when canceling in Pagar.Me, return the status')
+              console.error(`>> Webhook E-com: Error when canceling in Pagar.Me, return the status #${resourceId}`)
               await updateOrder(appSdk, storeId, resourceId, auth, { status: 'open' })
               res.send(ECHO_SUCCESS)
             }
           } else {
-            console.log('>> Webhook E-com: Subscription already canceled or does not exist')
+            console.log(`>> Webhook E-com: Subscription #${resourceId} already canceled or does not exist`)
             res.send(ECHO_SUCCESS)
           }
         } else {
