@@ -94,7 +94,7 @@ exports.post = async ({ appSdk }, req, res) => {
         const methodConfig = configApp[paymentMethod] || {}
         let methodEnable = !methodConfig.disable
 
-        if (methodEnable && isRecurrence) {
+        if (isRecurrence) {
           methodEnable = methodConfig.enable_recurrence
         }
 
