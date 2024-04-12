@@ -1,7 +1,7 @@
 {
   "app": {
-    "title": "Pagar.me recorrente",
-    "short_description": "Pagamento recorrente via cartão de crédito e boleto com Pagar.me (API v5)",
-    "category": "tools"
+    "title": "Pagar.me V5",
+    "short_description": "Pagamento único via cartão de crédito, boleto e pix. Recorrente via cartão de crédito e boleto com Pagar.me (API v5)",
+    "category": "sales"
   }
 }
