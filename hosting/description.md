@@ -51,6 +51,13 @@ Com seu dashborad do Pagar.Me aberto:
 
 ![PagarMe banner](https://ecom-pagarme5.web.app/eventos_webhook.png)
 
+#### Pedido (Para transações que NÃO são assinaturas)
+- order.canceled
+- order.paid
+- order.payment_failed
+
+![PagarMe banner](https://ecom-pagarme5.web.app/eventos_webhook_orders.png)
+
 6) Por fim Clique em salvar
 
 ### Obtendo as Chaves
