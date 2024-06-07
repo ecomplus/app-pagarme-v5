@@ -134,7 +134,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           .send({ message: !subscription ? 'Not found subscription' : 'Subscription not canceled' })
       }
     } else if (type.startsWith('charge.')) {
-      // const statusChange = type.replace('charge.', '')
       const { data: charge } = await pagarmeAxios.get(`/charges/${body.data.id}`)
       console.log('>> Charge ', JSON.stringify(charge))
       if (charge.invoice) {
@@ -221,7 +220,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           }
         }
       } else if (charge.order) {
-        // TODO:
         // payment update (order in pagarme)
         console.log('>> Try update status order')
         const { order: orderPagarme, status } = charge
@@ -232,9 +230,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             let isUpdateTransaction = false
             let transactionBody
             const transaction = order.transactions.find(transaction => transaction.intermediator.transaction_id === orderPagarme.id)
-            // console.log('>> Try add payment history')
             const transactionPagarme = charge.last_transaction
-            // console.log('>>> TransactionPagarme ', JSON.stringify(transactionPagarme))
             let notificationCode = `${type};${body.id};`
             if (transactionPagarme.transaction_type === 'credit_card') {
               notificationCode += `${transactionPagarme.gateway_id || ''};`
@@ -262,7 +258,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             }
             await addPaymentHistory(appSdk, storeId, order._id, auth, bodyPaymentHistory)
             if (isUpdateTransaction && transaction._id) {
-              // console.log('>> Try Update transaction ')
               updateTransaction(appSdk, storeId, order._id, auth, transactionBody, transaction._id)
                 .catch(console.error)
             }
