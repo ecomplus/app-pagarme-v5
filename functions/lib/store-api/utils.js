@@ -22,8 +22,6 @@ const getOrderIntermediatorTransactionId = async (appSdk, storeId, invoiceId, au
   const { response: { data } } = await appSdk
     .apiRequest(storeId, `/orders.json${queryString}`, 'GET', null, auth)
 
-  // console.log(`>>> ${JSON.stringify(data)}`)
-
   return data?.result.length ? data?.result[0] : null
 }
 
@@ -38,7 +36,6 @@ const checkItemsAndRecalculeteOrder = (amount, items, plan, itemsPagarme) => {
       items.splice(i, 1)
     } else {
       const itemFound = itemsPagarme.find(itemFind => itemFind.id === `pi_${item.sku}`)
-      // console.log('>> Item ', JSON.stringify(itemFound))
       if (itemFound) {
         item.quantity = itemFound.quantity
         if (item.final_price) {

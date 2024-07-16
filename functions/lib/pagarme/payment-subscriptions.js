@@ -85,7 +85,6 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
       } else {
         pagarmeSubscription.installments = intervalPlan.interval_count || 1
       }
-      
     }
   }
 
@@ -132,7 +131,6 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
     pagarmeSubscription.items.push(itemFreight)
   }
 
-  // console.log('>> amount ', JSON.stringify(amount))
   // Add once discont, but webhook invoce check discount plan
   const discountSubscription = amount.discount && {
     value: `${Math.floor((amount.discount).toFixed(2) * 1000) / 10}`,
@@ -160,7 +158,6 @@ const createPayment = async (params, appData, storeId, customer) => {
 
   const address = parseAddress(params.to || params.billing_address)
 
-  console.log('>>Try payment')
   let discountEach
   if (amount.discount) {
     const quantityItems = items.reduce(function (acumulador, item) {

@@ -15,8 +15,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
   const orderId = params.order_id
   // const { amount, buyer, payer, to, items } = params
   const { amount, to, buyer } = params
-  console.log('> Transaction #', storeId, orderId)
-  console.log('>> Type transaction', params.type)
+  console.log('> Transaction #', storeId, orderId, params.type)
   const paymentMethod = params.payment_method.code
 
   // https://apx-mods.e-com.plus/api/v1/create_transaction/response_schema.json?store_id=100
@@ -70,11 +69,9 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       subscriptionPagarmeId = subcription.id
       // /invoices
       const { data: { data: invoices } } = await pagarmeAxios.get(`/invoices?subscription_id=${subscriptionPagarmeId}`)
-      console.log('>>Invoices:  ', JSON.stringify(invoices))
 
       const { data: charge } = await pagarmeAxios.get(`/charges/${invoices[0].charge.id}`)
 
-      console.log('>>Charge:  ', JSON.stringify(charge))
       const transactionPagarme = charge.last_transaction
 
       transaction.status = {
@@ -97,7 +94,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         transaction.payment_link = charge.last_transaction.url
         redirectToPayment = true
       }
-      // console.log('>> transaction ', JSON.stringify(transaction))
+
       colletionFirebase.doc(orderId)
         .set({
           storeId,
@@ -112,8 +109,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           amount
         })
         .catch(console.error)
-
-      console.log('> Save Firebase')
 
       res.send({
         redirect_to_payment: redirectToPayment,

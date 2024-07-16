@@ -48,6 +48,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       throw err
     }
 
+    console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}, ${body && JSON.stringify(body)}`)
     if (resource === 'orders') {
       if (body?.status === 'cancelled') {
         const order = await getOrderById(appSdk, storeId, resourceId, auth)
@@ -55,7 +56,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
           if (subcriptions && subcriptions[0].status !== 'canceled') {
             try {
-              console.log(`>> Webhook E-com: Try cancel subscription Pagar.Me code: #${resourceId}`)
               await pagarmeAxios.delete(`/subscriptions/${subcriptions[0].id}`)
               console.log('>> Webhook E-com: Successfully canceled')
               res.send(ECHO_SUCCESS)
@@ -74,14 +74,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             console.log(`>> Webhook E-com: Subscription #${resourceId} already canceled or does not exist`)
             res.send(ECHO_SUCCESS)
           }
-        } else {
-          console.warn(`Warn: Order ${order ? JSON.stringify(order) : ' not found'}`)
         }
-        // edit items order order Original
-        //
       }
     } else if (resource === 'products' && action === 'change') {
-      console.log('> Edit product ', resourceId, 's: ', storeId)
+      // console.log('> Edit product ', resourceId, 's: ', storeId)
 
       let query = 'status!=cancelled&transactions.type=recurrence'
       query += '&transactions.app.intermediator.code=pagarme'
@@ -94,7 +90,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           const updateItemPagarme = []
           const order = await getOrderById(appSdk, storeId, result[i]._id, auth)
           const docSubscription = await getDocFirestore(colletionFirebase, result[i]._id)
-          console.log('>> order ', JSON.stringify(order), ' ', JSON.stringify(docSubscription))
+          // console.log('>> order ', JSON.stringify(order), ' ', JSON.stringify(docSubscription))
           if (order && docSubscription) {
             const itemsUpdate = []
             order.items.forEach(orderItem => {
@@ -143,7 +139,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           }
           // order not found or error
           if (updateItemPagarme.length) {
-            console.log('>> Try update item in Pagar.Me')
             try {
               //
               await Promise.all(updateItemPagarme.map(itemPagarme => {
@@ -154,7 +149,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
                   }
                 )
               }))
-              console.log('>>> Update SUCESSS')
+              console.log('> Update item in Pagar.Me SUCESSS')
               res.send(ECHO_SUCCESS)
             } catch (err) {
               console.log('err ', err)
@@ -164,7 +159,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           }
         }
       }
-      console.log('>> not found ')
     }
     // More Trigger
   } catch (err) {

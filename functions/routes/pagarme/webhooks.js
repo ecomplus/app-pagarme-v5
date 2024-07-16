@@ -26,7 +26,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     if (type === 'subscription.created' && body.data) {
       const orderOriginalId = body.data?.code
       const subscriptionPagarmeId = body.data?.id
-      console.log(`>> Check SubcriptionId: ${orderOriginalId}`)
+      // (`>> Check SubcriptionId: ${orderOriginalId}`)
       const documentSnapshot = await colletionFirebase.doc(orderOriginalId).get()
       const docSubscription = documentSnapshot.exists && documentSnapshot.data()
       if (!docSubscription) {
@@ -138,13 +138,11 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       console.log('>> Charge ', JSON.stringify(charge))
       if (charge.invoice) {
         const { invoice, status } = charge
-        console.log('>>Parse status: ', parserChangeStatusToEcom(status))
         const order = await getOrderIntermediatorTransactionId(appSdk, storeId, invoice.id, auth)
         if (order) {
           if (order.financial_status.current !== parserChangeStatusToEcom(status)) {
             // updadte status
             const transaction = order.transactions.find(transaction => transaction.intermediator.transaction_id === invoice.id)
-            console.log('>> Try add payment history')
             const transactionPagarme = charge.last_transaction
             let notificationCode = `${type};${body.id};`
             if (transactionPagarme.transaction_type === 'credit_card') {
@@ -168,7 +166,6 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             console.log('>> Status update to paid')
             return res.sendStatus(200)
           } else {
-            console.log(`Status is ${parserChangeStatusToEcom(status)}`)
             return res.sendStatus(200)
           }
         } else {
@@ -209,12 +206,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               console.log('>> Create new Order')
               return res.sendStatus(201)
             } else {
-              console.log('>> Subscription not found')
               return res.status(404)
                 .send({ message: `Subscription code: #${subscription.code} not found` })
             }
           } else {
-            console.log('>> Order not found and transaction status is not paid')
             return res.status(400)
               .send({ message: 'Order not found and status is not paid' })
           }

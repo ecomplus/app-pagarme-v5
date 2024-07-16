@@ -29,8 +29,8 @@ exports.post = async ({ appSdk }, req, res) => {
           query: {
             bool: {
               must: [
-                { terms: { '_id': items.map((item) => item.product_id) } },
-                { terms: { 'categories._id': categoryIds } },
+                { terms: { _id: items.map((item) => item.product_id) } },
+                { terms: { 'categories._id': categoryIds } }
               ]
             }
           }
@@ -39,9 +39,6 @@ exports.post = async ({ appSdk }, req, res) => {
 
       hasRecurrence = data?.hits.total > 0
       isAllRecurring = data?.hits.total === items.length
-
-      // console.log(`${JSON.stringify(data?.hits.total)} isAllRecurring: ${isAllRecurring} hasRecurrence: ${hasRecurrence}`)
-
     } catch (err) {
       // console.error(err)
     }
@@ -81,7 +78,6 @@ exports.post = async ({ appSdk }, req, res) => {
     listPaymentMethod.push('account_deposit')
   }
 
-  // console.log(`APP: ${JSON.stringify(configApp)}`)
   paymentTypes.forEach(type => {
     // At first the occurrence only with credit card
     const isRecurrence = type === 'recurrence'
@@ -97,8 +93,6 @@ exports.post = async ({ appSdk }, req, res) => {
         if (isRecurrence) {
           methodEnable = methodConfig.enable_recurrence
         }
-
-        // console.log(`>>list: #${storeId} ${type} - ${paymentMethod} - ${methodEnable}  plan: ${JSON.stringify(plan)}`)
 
         // Pix not active in recurrence
         methodEnable = isPix && isRecurrence ? false : methodEnable
@@ -219,6 +213,5 @@ exports.post = async ({ appSdk }, req, res) => {
     })
   })
 
-  // console.log(`Response: ${JSON.stringify(response?.payment_gateways)}`)
   res.send(response)
 }
