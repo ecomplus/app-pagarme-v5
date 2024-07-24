@@ -48,9 +48,9 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       throw err
     }
 
-    console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}, ${body && JSON.stringify(body)}`)
     if (resource === 'orders') {
       if (body?.status === 'cancelled') {
+        console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}`)
         const order = await getOrderById(appSdk, storeId, resourceId, auth)
         if (order?.transactions?.length && order?.transactions[0]?.type === 'recurrence') {
           const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
@@ -68,29 +68,30 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             } catch (err) {
               console.error(`>> Webhook E-com: Error when canceling in Pagar.Me, return the status #${resourceId}`)
               await updateOrder(appSdk, storeId, resourceId, auth, { status: 'open' })
-              res.send(ECHO_SUCCESS)
+              return res.send(ECHO_SUCCESS)
             }
           } else {
             console.log(`>> Webhook E-com: Subscription #${resourceId} already canceled or does not exist`)
-            res.send(ECHO_SUCCESS)
+            return res.send(ECHO_SUCCESS)
           }
         }
       }
     } else if (resource === 'products' && action === 'change') {
-      // console.log('> Edit product ', resourceId, 's: ', storeId)
-
       let query = 'status!=cancelled&transactions.type=recurrence'
       query += '&transactions.app.intermediator.code=pagarme'
       query += `&items.product_id=${resourceId}`
 
       const result = await getOrderWithQueryString(appSdk, storeId, query, auth)
-      const product = await getProductById(appSdk, storeId, resourceId, auth)
       if (result && result.length) {
+        console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}, ${body && JSON.stringify(body)}`)
+        const product = await getProductById(appSdk, storeId, resourceId, auth)
         for (let i = 0; i < result.length; i++) {
           const updateItemPagarme = []
-          const order = await getOrderById(appSdk, storeId, result[i]._id, auth)
-          const docSubscription = await getDocFirestore(colletionFirebase, result[i]._id)
-          // console.log('>> order ', JSON.stringify(order), ' ', JSON.stringify(docSubscription))
+          const [order, docSubscription] = await Promise.all([
+            getOrderById(appSdk, storeId, result[i]._id, auth),
+            getDocFirestore(colletionFirebase, result[i]._id)
+          ])
+
           if (order && docSubscription) {
             const itemsUpdate = []
             order.items.forEach(orderItem => {
@@ -152,7 +153,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               console.log('> Update item in Pagar.Me SUCESSS')
               res.send(ECHO_SUCCESS)
             } catch (err) {
-              console.log('err ', err)
+              console.log(err)
               // When creating a new order, check the items saved in Pagar.Me with the original order items
               // No need to save to firestore
             }
@@ -160,6 +161,8 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         }
       }
     }
+
+    return res.send(ECHO_SKIP)
     // More Trigger
   } catch (err) {
     if (err.name === SKIP_TRIGGER_NAME) {
