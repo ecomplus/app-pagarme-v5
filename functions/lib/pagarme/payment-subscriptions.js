@@ -66,9 +66,9 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
     statement_descriptor: (`Assinatura ${statementDescriptor}`).substring(13)
   }
 
-  pagarmeSubscription.metada = {
-    order_number: params.order_number,
-    store_id: storeId,
+  pagarmeSubscription.metadata = {
+    order_number: `${params.order_number}`,
+    store_id: `${storeId}`,
     order_id: orderId,
     platform_integration: 'ecomplus'
   }
@@ -153,18 +153,11 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
 const createPayment = async (params, appData, storeId, customer) => {
   const pagarmeAxios = axios(appData.pagarme_api_token)
 
-  // const orderId = params.order_id
+  const orderId = params.order_id
   const { amount, items } = params
 
   const address = parseAddress(params.to || params.billing_address)
 
-  let discountEach
-  if (amount.discount) {
-    const quantityItems = items.reduce(function (acumulador, item) {
-      return acumulador + (item.quantity || 0)
-    }, 0)
-    discountEach = amount.discount / quantityItems
-  }
 
   const paymentMethod = paymentMethods[params.payment_method.code] || 'credit_card'
   const methodConfig = appData[params.payment_method.code]
@@ -232,6 +225,12 @@ const createPayment = async (params, appData, storeId, customer) => {
     }
   }
 
+  pagarmeOrder.metadata = {
+    order_number: `${params.order_number}`,
+    store_id: `${storeId}`,
+    order_id: orderId,
+    platform_integration: 'ecomplus'
+  }
   pagarmeOrder.payments = [payment]
 
   console.log('> Order PagarMe: ', JSON.stringify(pagarmeOrder))
