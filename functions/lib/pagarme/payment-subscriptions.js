@@ -40,6 +40,8 @@ const parseIntervalPlan = {
   }
 }
 
+const partnerId = '63e4f99a3d1a0f00192bd247'
+
 const createSubscription = async (params, appData, storeId, plan, customer) => {
   const pagarmeAxios = axios(appData.pagarme_api_token)
 
@@ -63,7 +65,7 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
     interval_count: intervalPlan.interval_count || 1,
     billing_type: 'prepaid', //
     customer,
-    statement_descriptor: (`Assinatura ${statementDescriptor}`).substring(13)
+    statement_descriptor: (`Assinatura ${statementDescriptor}`).substring(0, 13)
   }
 
   pagarmeSubscription.metadata = {
@@ -141,6 +143,7 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
   if (discountSubscription) {
     pagarmeSubscription.discounts.push(discountSubscription)
   }
+  pagarmeSubscription.service_referer_name = partnerId
 
   console.log('> Subscription: ', JSON.stringify(pagarmeSubscription))
 
@@ -157,7 +160,6 @@ const createPayment = async (params, appData, storeId, customer) => {
   const { amount, items } = params
 
   const address = parseAddress(params.to || params.billing_address)
-
 
   const paymentMethod = paymentMethods[params.payment_method.code] || 'credit_card'
   const methodConfig = appData[params.payment_method.code]
@@ -207,7 +209,7 @@ const createPayment = async (params, appData, storeId, customer) => {
     payment.credit_card = {
       operation_type: 'auth_and_capture', // auth_only
       installments: params.installments_number || 1,
-      statement_descriptor: statementDescriptor.substring(13),
+      statement_descriptor: statementDescriptor.substring(0, 13),
       card_token: params.credit_card && params.credit_card.hash,
       card: {
         billing_address: address
@@ -232,6 +234,7 @@ const createPayment = async (params, appData, storeId, customer) => {
     platform_integration: 'ecomplus'
   }
   pagarmeOrder.payments = [payment]
+  pagarmeOrder.service_referer_name = partnerId
 
   console.log('> Order PagarMe: ', JSON.stringify(pagarmeOrder))
 
