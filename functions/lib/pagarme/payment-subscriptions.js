@@ -52,10 +52,11 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
 
   const intervalPlan = parseIntervalPlan[plan.periodicity]
 
-  const statementDescriptor = appData.soft_descriptor || params?.domain
-    .replace('www.', '')
-    .replace('https://', '')
-    .split('.')[0] || '*'
+  const statementDescriptor = appData.soft_descriptor?.replace(/[^\w\s]/g, '') ||
+    params?.domain
+      .replace('www.', '')
+      .replace('https://', '')
+      .split('.')[0] || '*'
 
   const pagarmeSubscription = {
     code: orderId,
@@ -65,7 +66,7 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
     interval_count: intervalPlan.interval_count || 1,
     billing_type: 'prepaid', //
     customer,
-    statement_descriptor: (`Assinatura ${statementDescriptor}`).substring(0, 13)
+    statement_descriptor: (`AS ${statementDescriptor}`).substring(0, 13)
   }
 
   pagarmeSubscription.metadata = {
@@ -164,10 +165,11 @@ const createPayment = async (params, appData, storeId, customer) => {
   const paymentMethod = paymentMethods[params.payment_method.code] || 'credit_card'
   const methodConfig = appData[params.payment_method.code]
 
-  const statementDescriptor = appData.soft_descriptor || params?.domain
-    .replace('www.', '')
-    .replace('https://', '')
-    .split('.')[0] || '*'
+  const statementDescriptor = appData.soft_descriptor?.replace(/[^\w\s]/g, '') ||
+    params?.domain
+      .replace('www.', '')
+      .replace('https://', '')
+      .split('.')[0] || '*'
 
   const pagarmeOrder = { customer }
 
