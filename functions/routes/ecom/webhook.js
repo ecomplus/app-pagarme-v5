@@ -7,7 +7,7 @@ const {
   getOrderById,
   getProductById
 } = require('../../lib/store-api/utils')
-
+const { logger } = require('../../context')
 const {
   getDocFirestore
   // updateDocFirestore
@@ -50,28 +50,28 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
     if (resource === 'orders') {
       if (body?.status === 'cancelled') {
-        console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}`)
+        logger.info(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}`)
         const order = await getOrderById(appSdk, storeId, resourceId, auth)
         if (order?.transactions?.length && order?.transactions[0]?.type === 'recurrence') {
           const { data: { data: subcriptions } } = await pagarmeAxios.get(`/subscriptions?code=${resourceId}`)
           if (subcriptions && subcriptions[0].status !== 'canceled') {
             try {
               await pagarmeAxios.delete(`/subscriptions/${subcriptions[0].id}`)
-              console.log('>> Webhook E-com: Successfully canceled')
+              logger.info('>> Webhook E-com: Successfully canceled')
               res.send(ECHO_SUCCESS)
               colletionFirebase.doc(resourceId)
                 .set({
                   status: 'cancelled',
                   updatedAt: new Date().toISOString()
                 }, { merge: true })
-                .catch(console.error)
+                .catch(logger.error)
             } catch (err) {
-              console.error(`>> Webhook E-com: Error when canceling in Pagar.Me, return the status #${resourceId}`)
+              logger.error(`>> Webhook E-com: Error when canceling in Pagar.Me, return the status #${resourceId}`)
               await updateOrder(appSdk, storeId, resourceId, auth, { status: 'open' })
               return res.send(ECHO_SUCCESS)
             }
           } else {
-            console.log(`>> Webhook E-com: Subscription #${resourceId} already canceled or does not exist`)
+            logger.info(`>> Webhook E-com: Subscription #${resourceId} already canceled or does not exist`)
             return res.send(ECHO_SUCCESS)
           }
         }
@@ -83,7 +83,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
       const result = await getOrderWithQueryString(appSdk, storeId, query, auth)
       if (result && result.length) {
-        console.log(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}, ${body && JSON.stringify(body)}`)
+        logger.info(`>> Webhook E-com: #${storeId} ${action} ${resource}: ${resourceId}, ${body && JSON.stringify(body)}`)
         const product = await getProductById(appSdk, storeId, resourceId, auth)
         for (let i = 0; i < result.length; i++) {
           const updateItemPagarme = []
@@ -150,10 +150,10 @@ exports.post = async ({ appSdk, admin }, req, res) => {
                   }
                 )
               }))
-              console.log('> Update item in Pagar.Me SUCESSS')
+              logger.info('> Update item in Pagar.Me SUCESSS')
               res.send(ECHO_SUCCESS)
             } catch (err) {
-              console.log(err)
+              logger.error(err)
               // When creating a new order, check the items saved in Pagar.Me with the original order items
               // No need to save to firestore
             }
@@ -172,11 +172,11 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       const msg = `Webhook for ${storeId} unhandled with no authentication found`
       const error = new Error(msg)
       error.trigger = JSON.stringify(trigger)
-      console.error(error)
+      logger.error(error)
       res.status(412)
         .send(msg)
     } else {
-      console.error(err)
+      logger.error(err)
       // request to Store API with error response
       // return error status code
       const { message } = err
