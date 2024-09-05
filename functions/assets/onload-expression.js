@@ -11,7 +11,7 @@
         cvv: cardClient.cvc
       }
 
-      const resp = await fetch(
+      fetch(
         `https://api.pagar.me/core/v5/tokens?appId=${apiKey}`,
         {
           headers: {
@@ -24,18 +24,17 @@
           })
         }
       )
-
-      try {
-        const data = await resp.json()
-        if (data.id) {
-          resolve(data.id)
-        }
-        throw new Error('Credencial inválida')
-      } catch (err) {
-        console.log('credencial inválida')
-        // console.error(err)
-        reject(err)
-      }
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.id) {
+            resolve(data.id)
+          }
+          throw new Error('Credencial inválida')
+        })
+        .catch(err=> {
+          console.log('credencial inválida', err)
+          reject(err)
+        })
     })
   }
 }())
