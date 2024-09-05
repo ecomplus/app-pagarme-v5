@@ -23,6 +23,7 @@ const { app, procedures } = require('./ecom.config')
 // handle app authentication to Store API
 // https://github.com/ecomplus/application-sdk
 const { ecomServerIps, setup } = require('@ecomplus/application-sdk')
+const { createExecContext } = require('./context')
 
 server.use(bodyParser.urlencoded({ extended: false }))
 server.use(bodyParser.json())
@@ -132,7 +133,7 @@ recursiveReadDir(routesDir).filter(filepath => filepath.endsWith('.js')).forEach
 
 server.use(router)
 
-exports[functionName] = functions.https.onRequest(server)
+exports[functionName] = functions.https.onRequest(createExecContext(server))
 console.log(`-- Starting '${app.title}' E-Com Plus app with Function '${functionName}'`)
 
 // schedule update tokens job

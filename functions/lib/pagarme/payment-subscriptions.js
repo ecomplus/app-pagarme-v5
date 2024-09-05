@@ -1,3 +1,4 @@
+const { logger } = require('../../context')
 const axios = require('./axios-create')
 const { parseAddress } = require('./parses-utils')
 
@@ -146,7 +147,7 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
   }
   pagarmeSubscription.service_referer_name = partnerId
 
-  console.log('> Subscription: ', JSON.stringify(pagarmeSubscription))
+  logger.info(`> Subscription: ${JSON.stringify(pagarmeSubscription)}`)
 
   return pagarmeAxios.post(
     '/subscriptions',
@@ -238,7 +239,7 @@ const createPayment = async (params, appData, storeId, customer) => {
   pagarmeOrder.payments = [payment]
   pagarmeOrder.service_referer_name = partnerId
 
-  console.log('> Order PagarMe: ', JSON.stringify(pagarmeOrder))
+  logger.info(`> Order PagarMe: ${JSON.stringify(pagarmeOrder)}`)
 
   return pagarmeAxios.post(
     '/orders',
