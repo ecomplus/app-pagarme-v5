@@ -9,7 +9,7 @@ const {
   updateOrder,
   checkItemCategory
 } = require('../../lib/store-api/utils')
-
+const { logger } = require('../../context')
 const { parserChangeStatusToEcom } = require('../../lib/pagarme/parses-utils')
 
 exports.post = async ({ appSdk, admin }, req, res) => {
@@ -22,7 +22,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     const auth = await appSdk.getAuth(storeId)
     const appData = await getAppData({ appSdk, storeId, auth })
     const pagarmeAxios = axios(appData.pagarme_api_token)
-    console.log(`>> webhook ${JSON.stringify(body)}, type:${type}`)
+    logger.info(`>> webhook ${JSON.stringify(body)}, type:${type}`)
     if (type === 'subscription.created' && body.data) {
       const orderOriginalId = body.data?.code
       const subscriptionPagarmeId = body.data?.id
@@ -30,7 +30,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       const documentSnapshot = await colletionFirebase.doc(orderOriginalId).get()
       const docSubscription = documentSnapshot.exists && documentSnapshot.data()
       if (!docSubscription) {
-        console.log('> Subscription not found')
+        logger.warn('> Subscription not found')
         return res.status(404)
           .send({ message: `Subscription code: #${orderOriginalId} not found` })
       } else {
@@ -89,11 +89,11 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
         try {
           await Promise.all(requestPagarme)
-          console.log('>> Updated signature')
+          logger.info('>> Updated signature')
           res.status(201)
             .send({ message: 'Updated signature' })
         } catch (error) {
-          console.error(error)
+          logger.error(error)
           const errCode = 'WEBHOOK_PAGARME_INVOICE_CREATED'
           let status = 409
           let message = error.message
@@ -119,14 +119,14 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         const orderOriginalId = subscription.code
         const orderOriginal = await getOrderById(appSdk, storeId, orderOriginalId, auth)
         if (!orderOriginal) {
-          console.log('>> Order status canceled')
+          console.info('>> Order status canceled')
           return res.sendStatus(404)
         } else if (orderOriginal.status !== 'cancelled') {
           await updateOrder(appSdk, storeId, orderOriginalId, auth, { status: 'cancelled' })
-          console.log('>> Status update Cancelled')
+          logger.info('>> Status update Cancelled')
           return res.sendStatus(200)
         } else {
-          console.log('>> Order status canceled')
+          logger.info('>> Order status canceled')
           return res.sendStatus(200)
         }
       } else {
@@ -135,7 +135,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       }
     } else if (type.startsWith('charge.')) {
       const { data: charge } = await pagarmeAxios.get(`/charges/${body.data.id}`)
-      console.log('>> Charge ', JSON.stringify(charge))
+      logger.info(`>> Charge: ${JSON.stringify(charge)}`)
       if (charge.invoice) {
         const { invoice, status } = charge
         const order = await getOrderIntermediatorTransactionId(appSdk, storeId, invoice.id, auth)
@@ -163,14 +163,14 @@ exports.post = async ({ appSdk, admin }, req, res) => {
               bodyPaymentHistory.transaction_id = transaction._id
             }
             await addPaymentHistory(appSdk, storeId, order._id, auth, bodyPaymentHistory)
-            console.log('>> Status update to paid')
+            logger.info('>> Status update to paid')
             return res.sendStatus(200)
           } else {
             return res.sendStatus(200)
           }
         } else {
           if (status === 'paid') {
-            console.log('>> Try create new order for recurrence')
+            logger.info('>> Try create new order for recurrence')
             const { data: subscription } = await pagarmeAxios.get(`/subscriptions/${invoice.subscriptionId}`)
             const orderOriginal = await getOrderById(appSdk, storeId, subscription.code)
             const documentSnapshot = await colletionFirebase.doc(subscription.code).get()
@@ -196,14 +196,14 @@ exports.post = async ({ appSdk, admin }, req, res) => {
                 }
 
                 try {
-                  console.log('>> Updated signature, for next recurrence')
+                  logger.info('>> Updated signature, for next recurrence')
                   await Promise.all(requestPagarme)
                 } catch (err) {
-                  console.warn(err)
+                  logger.warn(err)
                 }
               }
 
-              console.log('>> Create new Order')
+              logger.info('>> Create new Order')
               return res.sendStatus(201)
             } else {
               return res.status(404)
@@ -216,7 +216,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         }
       } else if (charge.order) {
         // payment update (order in pagarme)
-        console.log('>> Try update status order')
+        logger.info('>> Try update status order')
         const { order: orderPagarme, status } = charge
         const order = await getOrderIntermediatorTransactionId(appSdk, storeId, orderPagarme.id, auth)
         if (order) {
@@ -254,9 +254,9 @@ exports.post = async ({ appSdk, admin }, req, res) => {
             await addPaymentHistory(appSdk, storeId, order._id, auth, bodyPaymentHistory)
             if (isUpdateTransaction && transaction._id) {
               updateTransaction(appSdk, storeId, order._id, auth, transactionBody, transaction._id)
-                .catch(console.error)
+                .catch(logger.error)
             }
-            console.log(`>> Status update to ${parserChangeStatusToEcom(status)}`)
+            logger.info(`>> Status update to ${parserChangeStatusToEcom(status)}`)
             return res.sendStatus(200)
           }
         } else {
@@ -269,7 +269,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       return res.sendStatus(405)
     }
   } catch (error) {
-    console.error(error)
+    logger.error(error)
     const errCode = 'WEBHOOK_PAGARME_INTERNAL_ERR'
     let status = 409
     let message = error.message
