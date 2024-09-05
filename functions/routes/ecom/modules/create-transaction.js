@@ -2,6 +2,7 @@ const { createSubscription, createPayment } = require('../../../lib/pagarme/paym
 const { getPlanInTransction } = require('../../../lib/pagarme/handle-plans')
 const { parserInvoiceStatusToEcom, parseAddress } = require('../../../lib/pagarme/parses-utils')
 const axios = require('../../../lib/pagarme/axios-create')
+const { logger } = require('../../../context')
 
 exports.post = async ({ appSdk, admin }, req, res) => {
   const colletionFirebase = admin.firestore().collection('subscriptions')
@@ -15,7 +16,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
   const orderId = params.order_id
   // const { amount, buyer, payer, to, items } = params
   const { amount, to, buyer } = params
-  console.log('> Transaction #', storeId, orderId, params.type)
+  logger.info(`> Transaction s${storeId}, #${orderId} => ${params.type}`)
   const paymentMethod = params.payment_method.code
 
   // https://apx-mods.e-com.plus/api/v1/create_transaction/response_schema.json?store_id=100
@@ -65,7 +66,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
 
       const plan = getPlanInTransction(labelPaymentGateway, appData.recurrence)
       const { data: subcription } = await createSubscription(params, appData, storeId, plan, pagarMeCustomer)
-      console.log('> Response: ', JSON.stringify(subcription))
+      logger.info(`> Response: ${JSON.stringify(subcription)}`)
       subscriptionPagarmeId = subcription.id
       // /invoices
       const { data: { data: invoices } } = await pagarmeAxios.get(`/invoices?subscription_id=${subscriptionPagarmeId}`)
@@ -108,7 +109,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
           items: subcription.items,
           amount
         })
-        .catch(console.error)
+        .catch(logger.error)
 
       res.send({
         redirect_to_payment: redirectToPayment,
@@ -117,7 +118,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
     } else {
       // type payment
       const { data: payment } = await createPayment(params, appData, storeId, pagarMeCustomer)
-      console.log('> Response: ', JSON.stringify(payment))
+      logger.info(`> Response: ${JSON.stringify(payment)}`)
       const [charge] = payment.charges
 
       const transactionPagarme = charge.last_transaction
@@ -165,7 +166,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       })
     }
   } catch (error) {
-    console.error(error)
+    logger.error(error)
     // try to debug request error
     const errCode = isRecurrence ? 'PAGARME_SUBSCRIPTION_ERR' : 'PAGARME_TRANSACTION_ERR'
     let { message } = error
@@ -184,7 +185,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
         message = data.errors[0].message
       }
     }
-    console.error(err)
+    logger.warn(err)
     res.status(409)
     res.send({
       error: errCode,
