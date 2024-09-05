@@ -216,7 +216,9 @@ const createPayment = async (params, appData, storeId, customer) => {
       card_token: params.credit_card && params.credit_card.hash,
       card: {
         billing_address: address
-      }
+      },
+      recurrence_model: params.installments_number ? 'instalment' : 'standing_order',
+      initiated_type: 'partial_shipment'
     }
   } else if (paymentMethod === 'pix') {
     payment.pix = {
