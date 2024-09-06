@@ -217,7 +217,7 @@ const createPayment = async (params, appData, storeId, customer) => {
       card: {
         billing_address: address
       },
-      recurrence_model: params.installments_number ? 'instalment' : 'standing_order',
+      recurrence_model: params.installments_number ? 'installment' : 'standing_order',
       initiated_type: 'partial_shipment'
     }
   } else if (paymentMethod === 'pix') {
