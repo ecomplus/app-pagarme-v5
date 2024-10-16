@@ -155,7 +155,14 @@ const createSubscription = async (params, appData, storeId, plan, customer) => {
   )
 }
 
-const createPayment = async (params, appData, storeId, customer) => {
+const createPayment = async ({
+  params,
+  appData,
+  storeId,
+  customer,
+  finalAmount,
+  installmentsNumber
+}) => {
   const pagarmeAxios = axios(appData.pagarme_api_token)
 
   const orderId = params.order_id
@@ -205,19 +212,18 @@ const createPayment = async (params, appData, storeId, customer) => {
 
   const payment = {
     payment_method: paymentMethod,
-    amount: Math.floor((amount.total) * 100)
+    amount: Math.floor(finalAmount * 100)
   }
-
   if (paymentMethod === 'credit_card') {
     payment.credit_card = {
       operation_type: 'auth_and_capture', // auth_only
-      installments: params.installments_number || 1,
+      installments: installmentsNumber || 1,
       statement_descriptor: statementDescriptor.substring(0, 13),
       card_token: params.credit_card && params.credit_card.hash,
       card: {
         billing_address: address
       },
-      recurrence_model: params.installments_number && params.installments_number > 1 ? 'installment' : 'standing_order',
+      recurrence_model: installmentsNumber > 1 ? 'installment' : 'standing_order',
       initiated_type: 'partial_shipment'
     }
   } else if (paymentMethod === 'pix') {

@@ -1,3 +1,4 @@
+const addInstallments = require('../../../lib/payments/add-installments')
 const { createSubscription, createPayment } = require('../../../lib/pagarme/payment-subscriptions')
 const { getPlanInTransction } = require('../../../lib/pagarme/handle-plans')
 const { parserInvoiceStatusToEcom, parseAddress } = require('../../../lib/pagarme/parses-utils')
@@ -117,7 +118,28 @@ exports.post = async ({ appSdk, admin }, req, res) => {
       })
     } else {
       // type payment
-      const { data: payment } = await createPayment(params, appData, storeId, pagarMeCustomer)
+      let installmentsNumber = params.installments_number
+      let finalAmount = amount.total
+      if (installmentsNumber > 1 && appData.installments) {
+        // list all installment options
+        const { gateway } = addInstallments(amount, appData.installments)
+        const installmentOption = gateway.installment_options &&
+          gateway.installment_options.find(({ number }) => number === installmentsNumber)
+        if (installmentOption) {
+          transaction.installments = installmentOption
+          finalAmount = transaction.installments.total = installmentOption.number * installmentOption.value
+        } else {
+          installmentsNumber = 1
+        }
+      }
+      const { data: payment } = await createPayment({
+        params,
+        appData,
+        storeId,
+        customer: pagarMeCustomer,
+        finalAmount,
+        installmentsNumber
+      })
       logger.info(`> Response: ${JSON.stringify(payment)}`)
       const [charge] = payment.charges
 
