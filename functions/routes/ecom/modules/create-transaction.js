@@ -38,7 +38,7 @@ exports.post = async ({ appSdk, admin }, req, res) => {
   let redirectToPayment = false
   try {
     const pagarMeCustomer = {
-      name: buyer.fullname,
+      name: buyer.fullname?.substring(0, 64),
       type: buyer.registry_type === 'j' ? 'company' : 'individual',
       email: buyer.email,
       code: buyer.customer_id,
