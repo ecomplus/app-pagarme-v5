@@ -156,6 +156,40 @@ const app = {
       },
       hide: true
     },
+    turnstile_mode: {
+      schema: {
+        type: 'string',
+        enum: [
+          'report',
+          'enforce',
+          'off'
+        ],
+        default: 'report',
+        title: 'Verificação anti-robô no cartão',
+        description: 'Cloudflare Turnstile contra teste de cartão (card testing), só funciona com as duas chaves do ' +
+          'Turnstile preenchidas. report: só registra nos logs o que seria recusado; enforce: recusa o pagamento ' +
+          'com cartão sem a verificação; off: desativada'
+      },
+      hide: false
+    },
+    turnstile_site_key: {
+      schema: {
+        type: 'string',
+        maxLength: 255,
+        title: 'Turnstile: chave do site',
+        description: 'Site key do widget criado no painel da Cloudflare (Turnstile), com os domínios da loja'
+      },
+      hide: false
+    },
+    turnstile_secret_key: {
+      schema: {
+        type: 'string',
+        maxLength: 255,
+        title: 'Turnstile: chave secreta',
+        description: 'Secret key do mesmo widget do Turnstile'
+      },
+      hide: true
+    },
     soft_descriptor: {
       schema: {
         type: 'string',

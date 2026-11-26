@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const addInstallments = require('../../../lib/payments/add-installments')
 const { discountPlanPayment } = require('../../../lib/pagarme/handle-plans')
+const { getTurnstileClientConfig } = require('../../../lib/turnstile')
 const ecomClient = require('@ecomplus/client')
 
 exports.post = async ({ appSdk }, req, res) => {
@@ -196,6 +197,7 @@ exports.post = async ({ appSdk }, req, res) => {
             gateway.js_client = {
               script_uri: 'https://checkout.pagar.me/v1/tokenizecard.js',
               onload_expression: `window._pagarmeKey="${configApp.pagarme_public_key}";` +
+                getTurnstileClientConfig(configApp) +
                 fs.readFileSync(path.join(__dirname, '../../../assets/dist/onload-expression.min.js'), 'utf8'),
               cc_hash: {
                 function: '_pagarmeHash',

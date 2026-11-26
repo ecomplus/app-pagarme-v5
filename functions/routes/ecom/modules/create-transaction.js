@@ -3,6 +3,7 @@ const { createSubscription, createPayment } = require('../../../lib/pagarme/paym
 const { getPlanInTransction } = require('../../../lib/pagarme/handle-plans')
 const { parserInvoiceStatusToEcom, parseAddress } = require('../../../lib/pagarme/parses-utils')
 const axios = require('../../../lib/pagarme/axios-create')
+const { unwrapCardHash, checkTurnstile } = require('../../../lib/turnstile')
 const { logger } = require('../../../context')
 
 exports.post = async ({ appSdk, admin }, req, res) => {
@@ -19,6 +20,23 @@ exports.post = async ({ appSdk, admin }, req, res) => {
   const { amount, to, buyer } = params
   logger.info(`> Transaction s${storeId}, #${orderId} => ${params.type}`)
   const paymentMethod = params.payment_method.code
+
+  // O hash do cartão pode vir embrulhado com o token do Turnstile (ver `lib/turnstile`)
+  let turnstileToken
+  if (params.credit_card && params.credit_card.hash) {
+    const cardHash = unwrapCardHash(params.credit_card.hash)
+    params.credit_card.hash = cardHash.hash
+    turnstileToken = cardHash.turnstileToken
+  }
+  // Antes de qualquer chamada ao Pagar.me: o robô não pode chegar a testar o cartão
+  const turnstileRefusal = await checkTurnstile({ appData, params, turnstileToken, storeId })
+  if (turnstileRefusal) {
+    res.status(409)
+    return res.send({
+      error: 'PAGARME_TURNSTILE_ERR',
+      message: `Verificação anti-robô não confirmada (${turnstileRefusal.reason})`
+    })
+  }
 
   // https://apx-mods.e-com.plus/api/v1/create_transaction/response_schema.json?store_id=100
   const transaction = {
